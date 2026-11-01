@@ -28,6 +28,7 @@ interface UiState {
   weights: Weights;
   /** Selected band range, 1-indexed inclusive, or null for all 102 bands. */
   bandRange: [number, number] | null;
+  queueCollapsed: boolean;
 
   setEpoch: (e: EpochId) => void;
   stepEpoch: () => void;
@@ -43,6 +44,7 @@ interface UiState {
   setWeights: (w: Weights) => void;
   resetWeights: () => void;
   setBandRange: (r: [number, number] | null) => void;
+  toggleQueue: () => void;
 }
 
 function initialRenderer(): Renderer {
@@ -64,6 +66,7 @@ export const useUi = create<UiState>((set) => ({
   hideKnown: false,
   weights: { ...DEFAULT_WEIGHTS },
   bandRange: null,
+  queueCollapsed: false,
 
   setEpoch: (epoch) => set({ epoch }),
   stepEpoch: () => set((s) => ({ epoch: ((s.epoch % 3) + 1) as EpochId })),
@@ -79,4 +82,5 @@ export const useUi = create<UiState>((set) => ({
   setWeights: (weights) => set({ weights }),
   resetWeights: () => set({ weights: { ...DEFAULT_WEIGHTS } }),
   setBandRange: (bandRange) => set({ bandRange }),
+  toggleQueue: () => set((s) => ({ queueCollapsed: !s.queueCollapsed })),
 }));

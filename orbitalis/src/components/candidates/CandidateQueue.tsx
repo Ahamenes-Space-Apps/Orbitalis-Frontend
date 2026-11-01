@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { padId } from "@/lib/coords";
@@ -13,9 +12,11 @@ export const classColor = (cls: "moving" | "variable") =>
   cls === "moving" ? "#F2B544" : "#A596FF";
 
 export function CandidateQueue() {
-  const [collapsed, setCollapsed] = useState(false);
-
   const { ranked, visible, isLoading, isError } = useRankedCandidates();
+
+  // Collapsed state lives in the store so the parent column can resize with it.
+  const collapsed = useUi((s) => s.queueCollapsed);
+  const toggleQueue = useUi((s) => s.toggleQueue);
 
   const selectedId = useUi((s) => s.selectedId);
   const select = useUi((s) => s.select);
@@ -32,41 +33,37 @@ export function CandidateQueue() {
   };
 
   return (
-    <aside
-      className={cn(
-        "flex h-full flex-col border-r border-line bg-bar transition-all duration-200",
-        collapsed ? "w-14" : "w-80",
-      )}
+    // The parent <aside> in ExplorerPage owns width, border and background.
+    <section
+      aria-label="Candidate queue"
+      className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden"
     >
       <div
         className={cn(
-          "flex items-center border-b border-line p-3",
+          "flex items-center gap-2 border-b border-line p-3",
           collapsed ? "justify-center" : "justify-between",
         )}
       >
         {!collapsed && (
-         <div className="flex items-baseline justify-between px-1">
-            <h2 className="m-0 text-lg font-semibold text-white">
+          <div className="flex min-w-0 flex-1 items-baseline justify-between gap-2 px-1">
+            <h2 className="m-0 truncate text-lg font-semibold text-white">
               Candidate queue
             </h2>
 
-            <span className="font-mono text-xs text-haze">
+            <span className="shrink-0 font-mono text-xs text-haze">
               ranked by score S
             </span>
           </div>
-          
         )}
 
         <button
           type="button"
-          onClick={() => setCollapsed((value) => !value)}
+          onClick={toggleQueue}
           aria-label={
-            collapsed
-              ? "Expand candidate queue"
-              : "Collapse candidate queue"
+            collapsed ? "Expand candidate queue" : "Collapse candidate queue"
           }
           aria-expanded={!collapsed}
-          className="flex size-8 cursor-pointer items-center justify-center rounded-md text-white transition-colors hover:bg-panel-2"
+          className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-white transition-colors hover:bg-panel-2"
         >
           {collapsed ? (
             <ChevronRight className="size-4" aria-hidden="true" />
@@ -78,31 +75,15 @@ export function CandidateQueue() {
 
       {!collapsed && (
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
-          <div className="flex items-baseline justify-between px-1">
-            <h2 className="m-0 text-lg font-semibold text-white">
-              Candidate queue
-            </h2>
-
-            <span className="font-mono text-xs text-haze">
-              ranked by score S
-            </span>
-          </div>
-
           <Tabs
             value={classFilter}
-            onValueChange={(value) =>
-              setClassFilter(value as ClassFilter)
-            }
+            onValueChange={(value) => setClassFilter(value as ClassFilter)}
             className="px-1"
           >
             <TabsList aria-label="Filter by class">
-              <TabsTrigger value="all">
-                All {counts.all}
-              </TabsTrigger>
+              <TabsTrigger value="all">All {counts.all}</TabsTrigger>
 
-              <TabsTrigger value="moving">
-                Moving {counts.moving}
-              </TabsTrigger>
+              <TabsTrigger value="moving">Moving {counts.moving}</TabsTrigger>
 
               <TabsTrigger value="variable">
                 Variable {counts.variable}
@@ -112,7 +93,6 @@ export function CandidateQueue() {
 
           <label className="flex items-center justify-between gap-3 px-1 text-[13px] text-mist">
             Hide known objects
-
             <Switch
               checked={hideKnown}
               onCheckedChange={setHideKnown}
@@ -121,9 +101,7 @@ export function CandidateQueue() {
           </label>
 
           {isLoading && (
-            <div className="px-1 text-sm text-haze">
-              Loading candidates…
-            </div>
+            <div className="px-1 text-sm text-haze">Loading candidates…</div>
           )}
 
           {isError && (
@@ -170,13 +148,9 @@ export function CandidateQueue() {
 
                         <span
                           className="text-xs"
-                          style={{
-                            color: classColor(candidate.cls),
-                          }}
+                          style={{ color: classColor(candidate.cls) }}
                         >
-                          {candidate.cls === "moving"
-                            ? "Moving"
-                            : "Variable"}
+                          {candidate.cls === "moving" ? "Moving" : "Variable"}
                         </span>
 
                         {candidate.knownMatch && (
@@ -202,9 +176,7 @@ export function CandidateQueue() {
                         <span
                           className="block h-1 rounded-sm bg-white"
                           style={{
-                            width: `${Math.round(
-                              candidate.score * 100,
-                            )}%`,
+                            width: `${Math.round(candidate.score * 100)}%`,
                           }}
                         />
                       </span>
@@ -233,6 +205,6 @@ export function CandidateQueue() {
           </Link>
         </div>
       )}
-    </aside>
+    </section>
   );
 }

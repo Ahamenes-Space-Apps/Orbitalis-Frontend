@@ -2,22 +2,33 @@ import { useCandidates, useField, useStationary } from '@/data/hooks';
 import { SkyView } from '@/components/sky/SkyView';
 import { CandidateQueue } from '@/components/candidates/CandidateQueue';
 import { SelectedSummary } from '@/components/candidates/SelectedSummary';
+import { useUi } from '@/store/useUi';
+import { cn } from '@/lib/utils';
 
 export function ExplorerPage() {
   const field = useField();
   const stationary = useStationary();
   const candidates = useCandidates();
+  const collapsed = useUi((s) => s.queueCollapsed);
 
   const failed = field.isError || stationary.isError || candidates.isError;
   const ready = field.data && stationary.data && candidates.data;
 
   return (
     <div className="flex min-h-0 flex-1 flex-wrap">
-      <aside className="flex min-w-0 shrink basis-85 flex-col gap-4 border-r border-line bg-bar p-4 pt-5">
+      {/* This element owns the column width. The queue inside it just fills it. */}
+      <aside
+        className={cn(
+          'flex min-w-0 shrink flex-col border-r border-line bg-bar transition-[flex-basis,padding] duration-200',
+          collapsed ? 'basis-14 gap-0 p-0' : 'basis-85 gap-4 p-4 pt-5',
+        )}
+      >
         <CandidateQueue />
-        <div className="mt-auto">
-          <SelectedSummary />
-        </div>
+        {!collapsed && (
+          <div className="mt-auto">
+            <SelectedSummary />
+          </div>
+        )}
       </aside>
 
       <main className="relative min-h-[780px] min-w-0 flex-[999_1_560px] overflow-hidden" aria-label="Sky explorer">
