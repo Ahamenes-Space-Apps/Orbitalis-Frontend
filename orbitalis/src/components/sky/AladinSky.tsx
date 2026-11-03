@@ -1,5 +1,6 @@
 import { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { KIND_COLOR } from '@/lib/skyItems';
+import { useTweenedItems } from '@/lib/useTweenedItems';
 import { useUi } from '@/store/useUi';
 import type { SkyRendererProps } from './types';
 
@@ -76,6 +77,7 @@ export function AladinSky({
   const [ready, setReady] = useState(false);
   const backdrop = useUi((s) => s.backdrop);
   const frame = useUi((s) => s.frame);
+  const tweenedItems = useTweenedItems(items);
 
   useEffect(() => {
     onSelectRef.current = onSelect;
@@ -177,7 +179,7 @@ export function AladinSky({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Redraw sources whenever the items change (epoch, gain, selection, layers).
+  // Redraw sources whenever the tweened items change (epoch, gain, selection, layers).
   useEffect(() => {
     const A = AladinRef.current;
     const catalog = catalogRef.current;
@@ -185,7 +187,7 @@ export function AladinSky({
     try {
       catalog.removeAll();
       catalog.addSources(
-        items.map((it) =>
+        tweenedItems.map((it) =>
           A.source(it.ra, it.dec, {
             kind: it.kind,
             cid: it.cid,
@@ -198,7 +200,7 @@ export function AladinSky({
     } catch (e) {
       onFailedRef.current(e instanceof Error ? e.message : String(e));
     }
-  }, [ready, items]);
+  }, [ready, tweenedItems]);
 
   // The real-sky backdrop is hidden by default: the sources are synthetic and should not be read against real stars.
   useEffect(() => {
