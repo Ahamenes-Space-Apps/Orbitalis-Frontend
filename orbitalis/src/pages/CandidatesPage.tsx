@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { formatArcsec, formatSigned, padId } from '@/lib/coords';
+import { DURATION, EASE } from '@/lib/motion';
 import { COMPONENT_META, KNOWN_OBJECT_FACTOR, normalizeWeights } from '@/lib/scoring';
 import { useRankedCandidates } from '@/data/hooks';
 import { useUi, type ClassFilter } from '@/store/useUi';
