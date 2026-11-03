@@ -52,7 +52,12 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-full flex-col bg-field text-ink">
-      <header className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line bg-field px-6 py-3">
+      <motion.header
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+        className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line bg-field px-6 py-3"
+      >
         <NavLink
           to="/"
           className="flex items-center gap-3 text-ink no-underline"
@@ -115,12 +120,20 @@ export function AppShell() {
         )}
 
         <div
-          className="flex overflow-hidden rounded-[10px] border border-line-2 bg-panel"
+          className="relative flex overflow-hidden rounded-[10px] border border-line-2 bg-panel"
           role="group"
           aria-label="Coordinate frame"
         >
+          <motion.span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 w-1/2 rounded-[8px] bg-[#1b2540]"
+            initial={false}
+            animate={{ x: frame === 'equatorial' ? 0 : '100%' }}
+            transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+          />
           <Button
             variant="segment"
+            className="relative z-10 data-[active=true]:bg-transparent"
             data-active={frame === 'equatorial'}
             aria-pressed={frame === 'equatorial'}
             onClick={() => setFrame('equatorial')}
@@ -130,6 +143,7 @@ export function AppShell() {
 
           <Button
             variant="segment"
+            className="relative z-10 data-[active=true]:bg-transparent"
             data-active={frame === 'galactic'}
             aria-pressed={frame === 'galactic'}
             onClick={() => setFrame('galactic')}
@@ -137,7 +151,7 @@ export function AppShell() {
             Galactic
           </Button>
         </div>
-      </header>
+      </motion.header>
 
       <main className="flex min-h-0 flex-1 flex-col bg-field">
         <AnimatePresence mode="wait" initial={false}>
