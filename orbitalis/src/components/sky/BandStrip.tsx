@@ -1,6 +1,9 @@
 import { useRef } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { BAND_COUNT, WAVELENGTH_RANGE_UM } from '@/data/types';
 import { useUi } from '@/store/useUi';
+import { cn } from '@/lib/utils';
+import { DURATION, EASE } from '@/lib/motion';
 import { Button } from '@/components/ui/button';
 
 const TICKS = Array.from({ length: BAND_COUNT }, (_, i) => `hsl(${(250 - i * 2.3).toFixed(0)}, 72%, 62%)`);
@@ -59,7 +62,10 @@ export function BandStrip() {
         tabIndex={0}
         role="group"
         aria-label="Band range. Drag to select, or use the arrow keys."
-        className="flex h-[26px] cursor-ew-resize touch-none gap-px rounded-sm"
+        className={cn(
+          'flex h-[26px] cursor-ew-resize touch-none gap-px rounded-sm transition-shadow duration-300',
+          bandRange && 'ring-1 ring-violet/50 ring-offset-2 ring-offset-bar',
+        )}
         onPointerDown={(e) => {
           anchor.current = indexAt(e.clientX);
           moved.current = false;
@@ -79,16 +85,32 @@ export function BandStrip() {
       >
         {TICKS.map((bg, i) => {
           const inRange = !bandRange || (i + 1 >= bandRange[0] && i + 1 <= bandRange[1]);
-          return <div key={i} aria-hidden="true" className="min-w-0 flex-1 rounded-[1px]" style={{ background: bg, opacity: inRange ? 1 : 0.22 }} />;
+          return (
+            <div
+              key={i}
+              aria-hidden="true"
+              className="min-w-0 flex-1 rounded-[1px] transition-[opacity,transform] duration-300 hover:scale-y-125"
+              style={{ background: bg, opacity: inRange ? 1 : 0.22 }}
+            />
+          );
         })}
       </div>
       <div className="flex items-center justify-between gap-2 text-xs text-haze">
         <span>Drag across the strip to isolate a band range.</span>
-        {bandRange && (
-          <Button variant="ghost" size="sm" className="min-h-8 px-2" onClick={() => setBandRange(null)}>
-            All bands
-          </Button>
-        )}
+        <AnimatePresence initial={false}>
+          {bandRange && (
+            <motion.div
+              initial={{ opacity: 0, x: 6 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 6 }}
+              transition={{ duration: DURATION.fast, ease: EASE }}
+            >
+              <Button variant="ghost" size="sm" className="min-h-8 px-2" onClick={() => setBandRange(null)}>
+                All bands
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
