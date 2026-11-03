@@ -14,6 +14,8 @@ export interface LayerVisibility {
 
 interface UiState {
   epoch: EpochId;
+  /** True while the timeline is looping through the epochs. */
+  playing: boolean;
   selectedId: number | null;
   trails: boolean;
   /** Visual exaggeration of motion between epochs. Real shifts are often sub-pixel. */
@@ -32,6 +34,8 @@ interface UiState {
 
   setEpoch: (e: EpochId) => void;
   stepEpoch: () => void;
+  setPlaying: (v: boolean) => void;
+  togglePlay: () => void;
   select: (id: number | null) => void;
   setTrails: (v: boolean) => void;
   setMotionGain: (v: number) => void;
@@ -55,6 +59,7 @@ function initialRenderer(): Renderer {
 
 export const useUi = create<UiState>((set) => ({
   epoch: 2,
+  playing: false,
   selectedId: 42,
   trails: true,
   motionGain: 25,
@@ -70,6 +75,8 @@ export const useUi = create<UiState>((set) => ({
 
   setEpoch: (epoch) => set({ epoch }),
   stepEpoch: () => set((s) => ({ epoch: ((s.epoch % 3) + 1) as EpochId })),
+  setPlaying: (playing) => set({ playing }),
+  togglePlay: () => set((s) => ({ playing: !s.playing })),
   select: (selectedId) => set({ selectedId }),
   setTrails: (trails) => set({ trails }),
   setMotionGain: (motionGain) => set({ motionGain }),
