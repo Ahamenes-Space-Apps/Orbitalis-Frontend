@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { NavLink, useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { pageTransition } from '@/lib/motion';
@@ -10,11 +11,37 @@ import { cn } from '@/lib/utils';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   cn(
-    'border-b-2 px-3.5 py-2.5 text-sm  text-white no-underline transition-colors',
-    isActive
-      ? 'border-ink text-ink font-semibold'
-      : 'border-transparent text-haze hover:text-ink',
+    'relative px-3.5 py-2.5 text-sm text-white no-underline transition-colors',
+    isActive ? 'text-ink font-semibold' : 'text-haze hover:text-ink',
   );
+
+function NavItem({
+  to,
+  end,
+  children,
+}: {
+  to: string;
+  end?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <NavLink to={to} end={end} className={navClass}>
+      {({ isActive }) => (
+        <>
+          {children}
+          {isActive && (
+            <motion.span
+              aria-hidden="true"
+              layoutId="nav-underline"
+              className="absolute inset-x-2 -bottom-3 h-0.5 rounded-full bg-ink"
+              transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+            />
+          )}
+        </>
+      )}
+    </NavLink>
+  );
+}
 
 export function AppShell() {
   const { data: field } = useField();
@@ -44,17 +71,13 @@ export function AppShell() {
         </NavLink>
 
         <nav className="flex flex-wrap gap-1" aria-label="Main">
-          <NavLink to="/" end className={navClass}>
+          <NavItem to="/" end>
             Explorer
-          </NavLink>
+          </NavItem>
 
-          <NavLink to="/candidates" className={navClass}>
-            Candidates
-          </NavLink>
+          <NavItem to="/candidates">Candidates</NavItem>
 
-          <NavLink to="/methods" className={navClass}>
-            Methods and limits
-          </NavLink>
+          <NavItem to="/methods">Methods and limits</NavItem>
         </nav>
 
         <div className="min-w-0 flex-1" />
