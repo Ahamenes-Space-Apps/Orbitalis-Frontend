@@ -1,4 +1,6 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, useLocation, useOutlet } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
+import { pageTransition } from '@/lib/motion';
 import { formatDec, formatGalactic, formatRa } from '@/lib/coords';
 import { useField } from '@/data/hooks';
 import { usingMockApi } from '@/data/api';
@@ -18,6 +20,8 @@ export function AppShell() {
   const { data: field } = useField();
   const frame = useUi((s) => s.frame);
   const setFrame = useUi((s) => s.setFrame);
+  const location = useLocation();
+  const outlet = useOutlet();
 
   return (
     <div className="flex min-h-full flex-col bg-field text-ink">
@@ -112,8 +116,19 @@ export function AppShell() {
         </div>
       </header>
 
-      <main className="min-h-0 flex-1 bg-field">
-        <Outlet />
+      <main className="flex min-h-0 flex-1 flex-col bg-field">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.pathname}
+            variants={pageTransition}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="flex min-h-0 flex-1 flex-col"
+          >
+            {outlet}
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   );
