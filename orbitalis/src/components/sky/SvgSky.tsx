@@ -1,6 +1,8 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { offsetToSky, skyToOffset } from '@/lib/coords';
 import { KIND_COLOR, type SkyItem } from '@/lib/skyItems';
+import { DURATION, EASE, springSoft } from '@/lib/motion';
 import type { SkyRendererProps } from './types';
 
 const SCALE_BAR_CHOICES = [30, 60, 120, 300, 600];
@@ -32,6 +34,7 @@ export function SvgSky({ field, items, onSelect, ref }: SkyRendererProps) {
   const [zoom, setZoom] = useState(1);
   const [view, setView] = useState({ x: 0, y: 0 });
   const drag = useRef<{ x: number; y: number } | null>(null);
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -161,54 +164,95 @@ export function SvgSky({ field, items, onSelect, ref }: SkyRendererProps) {
           ))}
         </g>
 
-        {ordered.map(({ it, x, y }) => {
-          if (x < -40 || y < -40 || x > size.w + 40 || y > size.h + 40) return null;
-          if (it.kind === 'star') {
-            const h = hashOf(it.key);
-            const r = 1 + (h % 4) * 0.45;
-            return <circle key={it.key} cx={x} cy={y} r={r} fill={KIND_COLOR.star} opacity={0.4 + ((h >> 3) % 5) * 0.12} aria-hidden="true" />;
-          }
-          if (it.kind === 'ghost') {
-            return <circle key={it.key} cx={x} cy={y} r={3.5} fill={KIND_COLOR.ghost} opacity={it.alpha ?? 0.4} aria-hidden="true" />;
-          }
-          const color = KIND_COLOR[it.kind];
-          const r = it.selected ? 17 : 12;
-          const label = it.label ?? '';
-          return (
-            <g
-              key={it.key}
-              data-cid={it.cid}
-              role="button"
-              tabIndex={0}
-              aria-label={`Candidate ${label}, ${it.kind}${it.selected ? ', selected' : ''}`}
-              aria-pressed={it.selected ? true : false}
-              style={{ cursor: 'pointer' }}
-              onClick={() => it.cid !== undefined && onSelect(it.cid)}
-              onKeyDown={(e) => {
-                if ((e.key === 'Enter' || e.key === ' ') && it.cid !== undefined) {
-                  e.preventDefault();
-                  onSelect(it.cid);
-                }
-              }}
-            >
-              <circle cx={x} cy={y} r={22} fill="transparent" />
-              {it.selected && <circle cx={x} cy={y} r={r + 7} fill={color} opacity={0.14} />}
-              <circle
-                cx={x}
-                cy={y}
-                r={r}
-                fill="none"
-                stroke={color}
-                strokeWidth={it.selected ? 2 : 1.5}
-                strokeDasharray={it.kind === 'variable' ? '4 3' : undefined}
-                style={it.selected ? { filter: `drop-shadow(0 0 6px ${color})` } : undefined}
-              />
-              <text x={x + r + 6} y={y + 4} fill={color} fontSize="12" fontFamily="var(--font-mono)">
-                {label}
-              </text>
-            </g>
-          );
-        })}
+        <AnimatePresence initial={false}>
+          {ordered.map(({ it, x, y }) => {
+            if (x < -40 || y < -40 || x > size.w + 40 || y > size.h + 40) return null;
+            if (it.kind === 'star') {
+              const h = hashOf(it.key);
+              const r = 1 + (h % 4) * 0.45;
+              return (
+                <circle
+                  key={it.key}
+                  cx={x}
+                  cy={y}
+                  r={r}
+                  fill={KIND_COLOR.star}
+                  opacity={0.4 + ((h >> 3) % 5) * 0.12}
+                  aria-hidden="true"
+                />
+              );
+            }
+            if (it.kind === 'ghost') {
+              return (
+                <motion.circle
+                  key={it.key}
+                  r={3.5}
+                  fill={KIND_COLOR.ghost}
+                  initial={{ opacity: 0, cx: x, cy: y }}
+                  animate={{ opacity: it.alpha ?? 0.4, cx: x, cy: y }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: DURATION.base, ease: EASE }}
+                  aria-hidden="true"
+                />
+              );
+            }
+            const color = KIND_COLOR[it.kind];
+            const r = it.selected ? 17 : 12;
+            const label = it.label ?? '';
+            return (
+              <motion.g
+                key={it.key}
+                data-cid={it.cid}
+                role="button"
+                tabIndex={0}
+                aria-label={`Candidate ${label}, ${it.kind}${it.selected ? ', selected' : ''}`}
+                aria-pressed={it.selected ? true : false}
+                initial={false}
+                animate={{ x, y }}
+                transition={springSoft}
+                style={{ cursor: 'pointer' }}
+                onClick={() => it.cid !== undefined && onSelect(it.cid)}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && it.cid !== undefined) {
+                    e.preventDefault();
+                    onSelect(it.cid);
+                  }
+                }}
+              >
+                <circle r={22} fill="transparent" />
+                {it.selected && !reduce && (
+                  <motion.circle
+                    r={r + 6}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={1}
+                    initial={{ opacity: 0.25 }}
+                    animate={{ r: [r + 5, r + 11, r + 5], opacity: [0.28, 0.04, 0.28] }}
+                    transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                )}
+                {it.selected && <circle r={r + 7} fill={color} opacity={0.14} />}
+                <circle
+                  r={r}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={it.selected ? 2 : 1.5}
+                  strokeDasharray={it.kind === 'variable' ? '4 3' : undefined}
+                  style={it.selected ? { filter: `drop-shadow(0 0 6px ${color})` } : undefined}
+                />
+                <text
+                  x={r + 6}
+                  y={4}
+                  fill={color}
+                  fontSize="12"
+                  fontFamily="var(--font-mono)"
+                >
+                  {label}
+                </text>
+              </motion.g>
+            );
+          })}
+        </AnimatePresence>
 
         <g aria-hidden="true" transform={`translate(20, ${size.h - 172})`}>
           <path d={`M0 0 v6 h${barArcsec * scale} v-6`} fill="none" stroke="#8a94ab" strokeWidth="1.5" />

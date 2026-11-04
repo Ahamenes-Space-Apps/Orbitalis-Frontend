@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
+import { motion } from "motion/react";
 import { Crosshair, Minus, Plus } from "lucide-react";
 import { buildSkyItems } from "@/lib/skyItems";
 import { useUi, type LayerVisibility } from "@/store/useUi";
@@ -131,7 +132,12 @@ export function SkyView({
       )}
 
       <div className="pointer-events-none absolute top-4 right-5 left-5 flex flex-wrap items-start justify-between gap-3">
-        <div className="pointer-events-auto flex max-w-full flex-col items-start gap-2.5">
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="pointer-events-auto flex max-w-full flex-col items-start gap-2.5"
+        >
           <div
             className="flex flex-wrap gap-2"
             role="group"
@@ -227,36 +233,47 @@ export function SkyView({
               built-in sky view instead.
             </div>
           )}
-        </div>
+        </motion.div>
 
-        <div className="pointer-events-auto flex flex-col gap-2">
-          <button
+        <motion.div
+          initial={{ opacity: 0, x: 8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut', delay: 0.05 }}
+          className="pointer-events-auto flex flex-col gap-2"
+        >
+          <motion.button
             type="button"
             aria-label="Zoom in"
             className={iconBtn}
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.94 }}
             onClick={() => handle.current?.zoomIn()}
           >
             <Plus className="size-[18px]" aria-hidden="true" />
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             type="button"
             aria-label="Zoom out"
             className={iconBtn}
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.94 }}
             onClick={() => handle.current?.zoomOut()}
           >
             <Minus className="size-[18px]" aria-hidden="true" />
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             type="button"
             aria-label="Center on selected candidate"
             className={iconBtn}
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.94 }}
             onClick={() =>
               handle.current?.centerOn(selected ? selected.positions[0] : null)
             }
           >
             <Crosshair className="size-[18px]" aria-hidden="true" />
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       </div>
 
       <TimelinePanel field={field} />

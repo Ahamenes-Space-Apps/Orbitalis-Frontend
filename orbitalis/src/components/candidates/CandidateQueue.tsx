@@ -1,12 +1,15 @@
+import { AnimatePresence, motion } from "motion/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { padId } from "@/lib/coords";
 import { cn } from "@/lib/utils";
+import { DURATION, EASE, listItem } from "@/lib/motion";
 import { useRankedCandidates } from "@/data/hooks";
 import { useUi, type ClassFilter } from "@/store/useUi";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { AnimatedBar } from "@/components/ui/motion";
 
 export const classColor = (cls: "moving" | "variable") =>
   cls === "moving" ? "#F2B544" : "#A596FF";
@@ -73,8 +76,16 @@ export function CandidateQueue() {
         </button>
       </div>
 
-      {!collapsed && (
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+      <AnimatePresence initial={false}>
+        {!collapsed && (
+          <motion.div
+            key="queue-body"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: DURATION.fast, ease: EASE }}
+            className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4"
+          >
           <Tabs
             value={classFilter}
             onValueChange={(value) => setClassFilter(value as ClassFilter)}
@@ -114,6 +125,7 @@ export function CandidateQueue() {
             className="m-0 flex list-none flex-col gap-2 p-0"
             aria-label="Ranked candidates"
           >
+            <AnimatePresence initial={false}>
             {visible.slice(0, 7).map((candidate) => {
               const selected = candidate.id === selectedId;
 
@@ -124,7 +136,15 @@ export function CandidateQueue() {
                 candidate.flaggedBands[1] >= bandRange[0];
 
               return (
-                <li key={candidate.id}>
+                <motion.li
+                  key={candidate.id}
+                  layout
+                  variants={listItem}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  transition={{ layout: { duration: DURATION.base, ease: EASE } }}
+                >
                   <button
                     type="button"
                     onClick={() => select(candidate.id)}
@@ -172,23 +192,21 @@ export function CandidateQueue() {
                         )}
                       </span>
 
-                      <span className="block h-1 rounded-sm bg-line">
-                        <span
-                          className="block h-1 rounded-sm bg-white"
-                          style={{
-                            width: `${Math.round(candidate.score * 100)}%`,
-                          }}
-                        />
-                      </span>
+                      <AnimatedBar
+                        value={candidate.score}
+                        className="h-1 rounded-sm bg-line"
+                        barClassName="bg-white"
+                      />
                     </span>
 
                     <span className="font-mono text-sm font-medium text-white">
                       {candidate.score.toFixed(2)}
                     </span>
                   </button>
-                </li>
+                </motion.li>
               );
             })}
+            </AnimatePresence>
           </ol>
 
           {!isLoading && visible.length === 0 && (
@@ -203,8 +221,9 @@ export function CandidateQueue() {
           >
             View all {visible.length} candidates and adjust the weights
           </Link>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

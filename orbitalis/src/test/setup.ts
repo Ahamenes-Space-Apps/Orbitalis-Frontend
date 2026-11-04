@@ -1,6 +1,10 @@
 import '@testing-library/jest-dom/vitest';
 import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
+import { MotionGlobalConfig } from 'motion/react';
+
+// Animations should not add timing noise to unit tests. Motion renders the final state instead.
+MotionGlobalConfig.skipAnimations = true;
 
 afterEach(() => cleanup());
 
