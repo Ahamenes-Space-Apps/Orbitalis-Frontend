@@ -1,129 +1,184 @@
-import { useField, useRankedCandidates } from '@/data/hooks';
-import { usingMockApi } from '@/data/api';
-import { padId } from '@/lib/coords';
-import { Card, CardDescription, CardTitle } from '@/components/ui/card';
+import { useEffect, useRef, useState } from 'react';
 
-const STAGES = [
-  ['Ingest', 'Read SPHEREx observations from IRSA, or the synthetic generator, and keep the WCS of every exposure.'],
-  ['Register', 'Check that positions agree between epochs, using bright stationary sources as anchors.'],
-  ['Extract and match', 'Find sources, measure centroids and fluxes, and match them across epochs.'],
-  ['Classify', 'Label each source as stationary, moving, variable, or appearing and disappearing.'],
-  ['Score and cross-match', 'Combine four pieces of evidence into S, then compare against known solar-system objects and catalogs.'],
-  ['Review', 'A person looks at the candidate, its motion, its spectrum, and decides whether it deserves follow-up.'],
+const SECTIONS = [
+  ['what', 'What ORBITALIS does'],
+  ['data', 'Data & preparation'],
+  ['validation', 'Validation'],
+  ['model', 'Model card'],
+  ['limits', 'Limitations'],
+] as const;
+
+const STATS = [
+  ['Recall', '0.91', 'Recovered injected sources'],
+  ['Precision', '0.88', 'Measured against injected sources'],
+  ['Completeness', '0.84', 'For this experiment'],
 ];
 
-const LIMITS = [
-  ['Pixels are large.', 'SPHEREx pixels are about 6″ across. A 3.7″ shift is smaller than one pixel, so detection depends on centroid precision and on tracks over several epochs, not on how a blink comparison looks.'],
-  ['Wavelength changes across the detector.', 'The same sky position is seen at different wavelengths in different exposures. Epochs are compared source by source, in matched bands, not by subtracting whole images.'],
-  ['Most movers are known.', 'In real data, most moving sources will be catalogued asteroids. That is why known objects are cross-matched and ranked lower.'],
-  ['No match is not novelty.', 'Catalogs are incomplete at faint magnitudes. An unmatched object is a reason to look, not a finding.'],
-  ['A candidate is not a detection.', 'Nothing here confirms a planet, a comet or any other object. Follow-up observations do that.'],
+const LIMITATIONS = [
+  'Real-data detections that match nothing known remain candidates, not errors.',
+  'Real shifts may be smaller than a pixel; displayed motion can be exaggerated and must be labelled.',
+  'Optional features such as spectral classification depend on available data and capabilities.',
+  'Human review of original observations is essential before drawing conclusions.',
 ];
 
-const ENDPOINTS = [
-  ['GET /api/field', 'Field description: center, size, pixel scale, epochs, counts'],
-  ['GET /api/sources?class=stationary', 'Stationary sources (id, ra, dec, flux)'],
-  ['GET /api/candidates', 'All candidates, without spectra or cutouts'],
-  ['GET /api/candidates/{id}', 'One candidate with 102-band spectrum, offsets, cutout stars, cross-matches'],
-  ['GET /api/candidates/{id}/explanation', 'Short text explaining the ranking, written from the candidate record only'],
-];
+const card =
+  'scroll-mt-[82px] rounded-[11px] border border-[#26324d] bg-[#0c1220] p-5 leading-[1.65] [&_h2]:mb-[7px] [&_h2]:text-base [&_h2]:font-semibold [&_p]:mb-2.5';
 
 export function MethodsPage() {
-  const field = useField();
-  const { ranked } = useRankedCandidates({ applyFilters: false });
+  const [active, setActive] = useState<string>(SECTIONS[0][0]);
+  const [toast, setToast] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const planted = ranked.find((c) => c.truth === 'planted-high-interest');
-  const truthMovers = ranked.filter((c) => c.truth === 'planted-moving' || c.truth === 'planted-high-interest');
-  const topN = ranked.slice(0, truthMovers.length);
-  const moversInTop = topN.filter((c) => c.cls === 'moving').length;
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) setActive(visible[0].target.id);
+      },
+      { rootMargin: '-80px 0px -60% 0px' },
+    );
+    SECTIONS.forEach(([id]) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+
+  function runValidation() {
+    setToast('Validation run queued in this prototype');
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setToast(null), 2300);
+  }
 
   return (
-    <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-5 px-6 pt-7 pb-14">
-      <div className="flex flex-col gap-2">
-        <div className="text-xs font-semibold tracking-[0.14em] text-amber">METHODS AND LIMITS</div>
-        <h1 className="m-0 text-4xl font-semibold">What this tool does, and what it cannot say</h1>
-        <p className="m-0 max-w-3xl text-[15px] leading-relaxed text-mist">
-          ORBITALIS is an interface for finding objects whose position or brightness changes between repeated sky observations.
-          It gives people a faster way to find what deserves to be investigated. It does not decide what an object is.
-        </p>
-      </div>
-
-      <Card>
-        <CardTitle>Pipeline</CardTitle>
-        <ol className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
-          {STAGES.map(([name, text], i) => (
-            <li key={name} className="flex gap-3 rounded-xl border border-line bg-panel-2 p-4">
-              <span className="font-mono text-sm text-amber">{i + 1}</span>
-              <span>
-                <span className="block text-[15px] font-semibold">{name}</span>
-                <span className="mt-1 block text-[13px] leading-normal text-mist">{text}</span>
-              </span>
-            </li>
-          ))}
-        </ol>
-      </Card>
-
-      <Card>
-        <CardTitle>Limits to keep in mind</CardTitle>
-        <ul className="m-0 flex list-none flex-col gap-3 p-0">
-          {LIMITS.map(([title, text]) => (
-            <li key={title} className="text-[14px] leading-relaxed text-[#d5dbe8]">
-              <strong className="text-ink">{title}</strong> {text}
-            </li>
-          ))}
-        </ul>
-      </Card>
-
-      <Card data-testid="validation-card">
-        <div>
-          <CardTitle>Synthetic validation</CardTitle>
-          <CardDescription>
-            {field.data?.synthetic
-              ? 'This field is generated, so the right answers are known. These numbers use your current score weights.'
-              : 'Ground truth is only available on synthetic fields.'}
-          </CardDescription>
-        </div>
-        {planted ? (
-          <div className="flex flex-wrap gap-x-12 gap-y-4">
-            <div>
-              <div className="text-[11px] tracking-widest text-haze">PLANTED HIGH-INTEREST OBJECT</div>
-              <div className="mt-1 font-mono text-[28px]" data-testid="planted-rank">
-                #{padId(planted.id)} ranks {planted.rank} of {ranked.length}
-              </div>
-            </div>
-            <div>
-              <div className="text-[11px] tracking-widest text-haze">PLANTED MOVERS IN THE TOP {topN.length}</div>
-              <div className="mt-1 font-mono text-[28px]" data-testid="movers-in-top">
-                {moversInTop} of {truthMovers.length}
-              </div>
+    <div className="min-h-screen bg-[#080d19] px-5 pt-[18px] pb-7 text-sm text-[#e8ecf6] max-sm:px-2.5">
+      <div className="mx-auto w-full max-w-[1900px]">
+        <div className="mt-2 mb-[18px] flex items-start justify-between gap-5 max-sm:flex-col">
+          <div>
+            <h1 className="m-0 mb-1.5 text-2xl font-semibold tracking-[-0.02em]">Methods &amp; limits</h1>
+            <div className="text-xs leading-normal text-[#9aa3b8]">
+              How the search works, what the validation numbers mean, and where the method can fail.
             </div>
           </div>
-        ) : (
-          <p className="m-0 text-sm text-haze">No ground truth is attached to this field.</p>
-        )}
-        <p className="m-0 text-xs leading-normal text-haze">
-          These are checks against data made to be found. They show the ranking works as designed, not how it performs on the real sky.
-        </p>
-      </Card>
-
-      <Card>
-        <div>
-          <CardTitle>API contract</CardTitle>
-          <CardDescription>
-            {usingMockApi
-              ? 'You are running on the built-in mock API. Set VITE_API_URL to use a real backend that returns the same JSON.'
-              : 'Connected to a backend through VITE_API_URL.'}
-          </CardDescription>
+          <span className="whitespace-nowrap rounded-full bg-[#10392f] px-[9px] py-1 text-[11px] text-[#7ce5bd]">
+            Research notes
+          </span>
         </div>
-        <dl className="m-0 flex flex-col">
-          {ENDPOINTS.map(([path, text]) => (
-            <div key={path} className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b border-[#1e2840] py-3 last:border-b-0">
-              <dt className="font-mono text-[13px] text-amber">{path}</dt>
-              <dd className="m-0 text-[13px] text-mist">{text}</dd>
-            </div>
-          ))}
-        </dl>
-      </Card>
+
+        <div className="grid gap-[15px] lg:grid-cols-[220px_minmax(0,1fr)]">
+          <nav
+            aria-label="On this page"
+            className="h-max rounded-[11px] border border-[#26324d] bg-[#0c1220] p-[15px] max-lg:flex max-lg:gap-1.5 max-lg:overflow-x-auto lg:sticky lg:top-[82px]"
+          >
+            {SECTIONS.map(([id, label]) => (
+              <a
+                key={id}
+                href={`#${id}`}
+                aria-current={active === id ? 'true' : undefined}
+                className={`block whitespace-nowrap border-l-2 px-2 py-[9px] text-xs no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#69a9ff] ${
+                  active === id
+                    ? 'border-[#5aa0ff] bg-[#17305a66] text-[#dcecff]'
+                    : 'border-transparent text-[#9aa3b8] hover:text-[#e8ecf6]'
+                }`}
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="grid min-w-0 gap-[13px]">
+            <article id="what" className={card}>
+              <h2>What ORBITALIS does</h2>
+              <p>
+                ORBITALIS helps inspect astronomical observations for possible moving objects. It retrieves an image
+                series, checks data quality, prepares observations for comparison, and displays candidate paths for
+                human review.
+              </p>
+              <p>
+                <b>Shift-and-stack</b> aligns observations along a possible motion path and combines them. A source
+                that moves consistently may become easier to inspect in the combined image.
+              </p>
+            </article>
+
+            <article id="data" className={card}>
+              <h2>Data &amp; preparation</h2>
+              <p>
+                <b>Current release:</b> QR2 · <b>Field:</b> Synthetic validation field.
+              </p>
+              <p>
+                Image flags and stack policy determine which pixels and observations are included. Original frames
+                remain available beside every stacked result; a combined image should never replace the evidence it
+                came from.
+              </p>
+            </article>
+
+            <article id="validation" className={card}>
+              <h2>Validation</h2>
+              <p>
+                Validation uses synthetic sources injected with known positions and brightness. Metrics apply to the
+                selected experiment only.
+              </p>
+              <div className="my-3.5 grid gap-2.5 sm:grid-cols-3">
+                {STATS.map(([label, value, note]) => (
+                  <div key={label} className="rounded-[9px] border border-[#293752] bg-[#111b30] p-[13px]">
+                    <span className="text-[11px] text-[#9aa3b8]">{label}</span>
+                    <strong className="my-1 block text-[22px]">{value}</strong>
+                    <span className="text-[11px] text-[#9aa3b8]">{note}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs leading-normal text-[#9aa3b8]">
+                Results apply to this experiment only. These illustrative values are demo content, not a live
+                validation run.
+              </p>
+              <button
+                type="button"
+                onClick={runValidation}
+                className="cursor-pointer rounded-lg border border-[#4388ef] bg-[#1555bb] px-3.5 py-[9px] text-xs text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#69a9ff]"
+              >
+                Run validation
+              </button>
+            </article>
+
+            <article id="model" className={card}>
+              <h2>Model card</h2>
+              <p>
+                <b>Version:</b> cnn-0.1 · <b>Intended use:</b> prioritise candidates for inspection.
+              </p>
+              <p>
+                The model score is a prediction from a model trained on synthetic sources. It helps rank candidates
+                for inspection; it does not confirm an object or represent calibrated confidence.
+              </p>
+            </article>
+
+            <article id="limits" className={card}>
+              <h2>Limitations</h2>
+              <ul className="m-0 list-disc pl-[18px]">
+                {LIMITATIONS.map((l) => (
+                  <li key={l} className="[&:not(:first-child)]:mt-1.5">
+                    {l}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      {toast && (
+        <div
+          role="status"
+          className="fixed right-5 bottom-5 z-20 rounded-[9px] border border-[#3c5a86] bg-[#14233c] px-4 py-3 text-[#eaf2ff] shadow-[0_10px_30px_#0008]"
+        >
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
