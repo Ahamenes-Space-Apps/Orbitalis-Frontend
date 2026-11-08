@@ -161,7 +161,7 @@ export function TimelinePanel({ field }: { field: FieldInfo }) {
         </div>
       </div>
 
-      <BandStrip />
+
     </section>
   );
 }

@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { SvgSky } from "./SvgSky";
 import { TimelinePanel } from "./TimelinePanel";
 import type { SkyHandle } from "./types";
+import { BandStrip } from "./BandStrip";
 
 // Aladin Lite is big, so it is only fetched when the sky view is shown.
 const AladinSky = lazy(() =>
@@ -138,36 +139,42 @@ export function SkyView({
           transition={{ duration: 0.3, ease: 'easeOut' }}
           className="pointer-events-auto flex max-w-full flex-col items-start gap-2.5"
         >
-          <div
-            className="flex flex-wrap gap-2"
-            role="group"
-            aria-label="Layers"
-          >
-            {layerChips.map((c) => (
-              <Button
-                key={c.key}
-                variant="pill"
-                size="sm"
-                data-active={layers[c.key]}
-                aria-pressed={layers[c.key]}
-                onClick={() => toggleLayer(c.key)}
-                className="data-[active=true]:border-white/70 data-[active=true]:bg-white/25 data-[active=true]:text-field"
-              >
-                <span aria-hidden="true" className={c.swatch} />
-                {c.label}
-              </Button>
-            ))}
-            <Button
-              variant="pill"
-              size="sm"
-              data-active={trails}
-              aria-pressed={trails}
-              onClick={() => setTrails(!trails)}
-               className="data-[active=true]:border-white/70 data-[active=true]:bg-white/25 data-[active=true]:text-field"
-            >
-              Trails
-            </Button>
-          </div>
+        <div className="flex flex-col gap-3">
+  <div
+    className="flex flex-wrap items-center gap-2"
+    role="group"
+    aria-label="Layers"
+  >
+    {layerChips.map((c) => (
+      <Button
+        key={c.key}
+        variant="pill"
+        size="sm"
+        data-active={layers[c.key]}
+        aria-pressed={layers[c.key]}
+        onClick={() => toggleLayer(c.key)}
+        className="data-[active=true]:border-white/70 data-[active=true]:bg-white/25 data-[active=true]:text-field"
+      >
+        <span aria-hidden="true" className={c.swatch} />
+        {c.label}
+      </Button>
+    ))}
+    <Button
+      variant="pill"
+      size="sm"
+      data-active={trails}
+      aria-pressed={trails}
+      onClick={() => setTrails(!trails)}
+      className="data-[active=true]:border-white/70 data-[active=true]:bg-white/25 data-[active=true]:text-field"
+    >
+      Trails
+    </Button>
+  </div>
+
+  <div className="bg-bar/90 px-[22px] py-4 backdrop-blur-md">
+    <BandStrip />
+  </div>
+</div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-line-2 bg-bar/90 px-3 py-1.5 text-xs text-mist">
             <span>
               Motion exaggerated ×{gain} so it is visible. Real shifts are
