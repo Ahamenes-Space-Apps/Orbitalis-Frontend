@@ -7,6 +7,8 @@ import { useField } from '@/data/hooks';
 import { usingMockApi } from '@/data/api';
 import { useUi } from '@/store/useUi';
 import { Button } from '@/components/ui/button';
+import { AssistantLauncher } from '@/components/assistant/AssistantLauncher';
+import { AssistantPanel } from '@/components/assistant/AssistantPanel';
 import { cn } from '@/lib/utils';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -153,20 +155,26 @@ export function AppShell() {
         </div>
       </motion.header>
 
-      <main className="flex min-h-0 flex-1 flex-col bg-field">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={location.pathname}
-            variants={pageTransition}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className="flex min-h-0 flex-1 flex-col"
-          >
-            {outlet}
-          </motion.div>
-        </AnimatePresence>
-      </main>
+      <div className="flex min-h-0 flex-1">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-field">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={location.pathname}
+              variants={pageTransition}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              {outlet}
+            </motion.div>
+          </AnimatePresence>
+        </main>
+
+        <AssistantPanel />
+      </div>
+
+      <AssistantLauncher />
     </div>
   );
 }
