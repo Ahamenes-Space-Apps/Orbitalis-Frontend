@@ -17,7 +17,7 @@ function MessageBody({
       {content.split('\n\n').map((paragraph, index) => (
         <p
           key={index}
-          className="m-0 text-[11px] leading-relaxed whitespace-pre-line text-mist"
+          className="m-0 text-[14px] leading-relaxed whitespace-pre-line text-mist"
         >
           {paragraph.split(LINK_PATTERN).map((part, partIndex) => {
             if (!/^#\d{3}$/.test(part)) return <span key={partIndex}>{part}</span>;
@@ -27,7 +27,7 @@ function MessageBody({
                 key={partIndex}
                 type="button"
                 onClick={() => onCandidate(Number(part.slice(1)))}
-                className="cursor-pointer font-mono text-accent underline decoration-accent/40 underline-offset-2 transition-colors hover:text-accent-soft"
+                className="cursor-pointer rounded-sm font-mono text-accent underline decoration-accent/40 underline-offset-2 transition-colors hover:text-accent-soft"
               >
                 {part}
               </button>
@@ -90,8 +90,8 @@ export function MessageList({
   if (messages.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-        <span className="grid size-10 place-items-center border border-line-2 bg-canvas text-accent">
-          <Sparkles className="size-5" aria-hidden="true" />
+        <span className="grid size-12 place-items-center rounded-full border border-line-2 bg-panel text-accent">
+          <Sparkles className="size-6" aria-hidden="true" />
         </span>
         <div>
           <p className="m-0 text-[12px] font-semibold text-ink">
@@ -111,7 +111,7 @@ export function MessageList({
         if (message.role === 'user') {
           return (
             <div key={message.id} className="flex justify-end">
-              <div className="max-w-[85%] border border-line-2 bg-canvas px-2.5 py-2 text-[11px] leading-relaxed text-ink">
+              <div className="max-w-[85%] rounded-2xl rounded-br-md border border-accent/30 bg-accent/12 px-3.5 py-2.5 text-[14px] leading-relaxed text-ink">
                 {message.content}
               </div>
             </div>
@@ -127,15 +127,15 @@ export function MessageList({
           <div key={message.id} className="flex gap-2">
             <span
               aria-hidden="true"
-              className="mt-0.5 grid size-6 shrink-0 place-items-center border border-line-2 bg-canvas text-accent"
+              className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border border-line-2 bg-panel text-accent"
             >
               <Sparkles className="size-3" />
             </span>
 
             <div
               className={cn(
-                'flex min-w-0 flex-1 flex-col gap-2 border border-line bg-canvas px-2.5 py-2',
-                message.status === 'error' && 'border-signal/50',
+                'flex min-w-0 flex-1 flex-col gap-2 rounded-2xl rounded-tl-md border border-line bg-panel px-3.5 py-3',
+                message.status === 'error' && 'border-ink/40',
               )}
             >
               <ToolCalls message={message} />
@@ -154,7 +154,7 @@ export function MessageList({
               )}
 
               {message.status === 'error' && (
-                <span className="text-[10px] text-signal" role="alert">
+                <span className="text-[11px] text-ink" role="alert">
                   The assistant is unavailable right now. The rest of the app
                   keeps working.
                 </span>

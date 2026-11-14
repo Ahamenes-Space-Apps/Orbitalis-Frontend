@@ -133,8 +133,8 @@ export function AssistantPanel() {
         >
           <header className="flex items-start justify-between gap-3 border-b border-line px-3 py-2.5">
             <div>
-              <h2 className="m-0 flex items-center gap-2 text-[13px] font-semibold text-ink">
-                <Sparkles className="size-3.5 text-accent" aria-hidden="true" />
+              <h2 className="m-0 flex items-center gap-2 text-[15px] font-semibold text-ink">
+                <Sparkles className="size-4 text-accent" aria-hidden="true" />
                 Assistant
               </h2>
               <p className="m-0 mt-0.5 text-[10px] text-haze">

@@ -2,17 +2,13 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
-const badgeVariants = cva(
-  'inline-flex items-center whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.08em]',
-  {
-    variants: {
-      tone: {
-        neutral: 'text-haze',
-        amber: 'text-accent',
-        violet: 'text-signal',
-        teal: 'text-accent',
-        quiet: 'text-haze',
-      },
+const badgeVariants = cva('inline-flex items-center px-3 py-1 text-[13px]', {
+  variants: {
+    tone: {
+      neutral: 'border-line-2 text-mist',
+      accent: 'border-accent bg-accent/12 font-semibold text-accent',
+      secondary: 'border-accent-2 bg-accent-2/12 font-semibold text-accent-2',
+      quiet: 'border-line text-haze',
     },
     defaultVariants: { tone: 'neutral' },
   },

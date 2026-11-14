@@ -1,71 +1,85 @@
 @import "tailwindcss";
 @import "uplot/dist/uPlot.min.css";
 
+/*
+ * Dark is the default. The `dark` class stays on <html> so the custom variant
+ * below can be used anywhere in the tree; `light` swaps the token values.
+ */
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme inline {
-  --font-sans: "Plus Jakarta Sans Variable", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
-
-  --color-canvas: var(--canvas);
-  --color-panel: var(--panel);
-  --color-panel-2: var(--panel-2);
-  --color-line: var(--line);
-  --color-line-2: var(--line-2);
-  --color-ink: var(--ink);
-  --color-mist: var(--mist);
-  --color-haze: var(--haze);
-  --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
-  --color-accent-deep: var(--accent-deep);
-  --color-signal: var(--signal);
-  --color-star: var(--star);
-
-  /* Legacy aliases kept so existing integrations keep resolving. */
-  --color-field: var(--canvas);
-  --color-bar: var(--panel);
-  --color-amber: var(--accent);
-  --color-amber-soft: var(--accent-soft);
-  --color-cyan: var(--accent);
-  --color-violet: var(--signal);
-  --color-teal: var(--accent);
-  --color-slate: var(--haze);
-}
-
-:root {
-  color-scheme: light;
-  --canvas: #fafafa;
-  --panel: #ffffff;
-  --panel-2: #f1f5f9;
-  --line: #e2e8f0;
-  --line-2: #cbd5e1;
-  --ink: #0d0d0d;
-  --mist: #475569;
-  --haze: #64748b;
-  --accent: #1e466b;
-  --accent-soft: #2d5f8f;
-  --accent-deep: #67baf4;
-  --signal: #b45309;
-  --star: #64748b;
-  --sky-canvas: #f8fafc;
-}
-
+/*
+ * Four anchors: #0D0D0D, #1E466B, #67BAF4, #FAFAFA.
+ * Keep in sync with src/lib/palette.ts.
+ */
+:root,
 .dark {
   color-scheme: dark;
-  --canvas: #0d0d0d;
-  --panel: #13171e;
-  --panel-2: #19202a;
-  --line: rgb(30 70 107 / 0.4);
-  --line-2: rgb(30 70 107 / 0.7);
-  --ink: #fafafa;
-  --mist: #cbd5e1;
-  --haze: #94a3b8;
-  --accent: #67baf4;
-  --accent-soft: #9ad2f8;
-  --accent-deep: #1e466b;
-  --signal: #f59e0b;
-  --star: #cfe0ff;
-  --sky-canvas: #0d0d0d;
+
+  --t-field: #0d0d0d;
+  --t-bar: #0d0d0d;
+  --t-panel: #13171e;
+  --t-panel2: #19212b;
+
+  --t-line: #1e466b66;
+  --t-line2: #1e466b;
+
+  --t-ink: #fafafa;
+  --t-mist: #cbd5e1;
+  --t-haze: #94a3b8;
+  --t-slate: #64748b;
+
+  --t-accent: #67baf4;
+  --t-accent-soft: #a9d8fa;
+  --t-accent2: #4a8cbd;
+  --t-star: #e3eef8;
+  --t-warn: #f59e0b;
+}
+
+.light {
+  color-scheme: light;
+
+  --t-field: #fafafa;
+  --t-bar: #fafafa;
+  --t-panel: #ffffff;
+  --t-panel2: #f1f5f9;
+
+  --t-line: #e2e8f0;
+  --t-line2: #cbd5e1;
+
+  --t-ink: #0d0d0d;
+  --t-mist: #334155;
+  --t-haze: #64748b;
+  --t-slate: #94a3b8;
+
+  --t-accent: #1e466b;
+  --t-accent-soft: #67baf4;
+  --t-accent2: #67baf4;
+  --t-star: #475569;
+  --t-warn: #b45309;
+}
+
+@theme inline {
+  --font-sans: "Plus Jakarta Sans Variable", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-field: var(--t-field);
+  --color-bar: var(--t-bar);
+  --color-panel: var(--t-panel);
+  --color-panel-2: var(--t-panel2);
+
+  --color-line: var(--t-line);
+  --color-line-2: var(--t-line2);
+
+  --color-ink: var(--t-ink);
+  --color-mist: var(--t-mist);
+  --color-haze: var(--t-haze);
+  --color-slate: var(--t-slate);
+
+  --color-accent: var(--t-accent);
+  --color-accent-soft: var(--t-accent-soft);
+  --color-accent-2: var(--t-accent2);
+  --color-star: var(--t-star);
+  --color-warn: var(--t-warn);
 }
 
 @layer base {
@@ -75,62 +89,46 @@
     height: 100%;
   }
 
+  html {
+    background: var(--t-field);
+  }
+
   body {
     margin: 0;
-    background: var(--canvas);
-    color: var(--ink);
+    background: var(--t-field);
+    color: var(--t-ink);
     font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
 
-  a {
-    color: inherit;
+  /* Metrics must never jitter as digits change. */
+  .font-mono,
+  code,
+  kbd,
+  samp,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
   }
 
-  button,
-  input,
-  textarea,
-  select {
-    font: inherit;
+  a {
+    color: var(--t-accent);
   }
 
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--t-accent);
     outline-offset: 2px;
   }
 
   ::selection {
-    background: color-mix(in srgb, var(--accent) 35%, transparent);
-  }
-}
-
-@layer utilities {
-  .tnum {
-    font-variant-numeric: tabular-nums;
+    background: color-mix(in srgb, var(--t-accent) 28%, transparent);
   }
 
-  .hairline {
-    border-color: var(--line);
-  }
-
-  .console-scroll {
+  * {
     scrollbar-width: thin;
-    scrollbar-color: var(--line-2) transparent;
-  }
-
-  .console-scroll::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  .console-scroll::-webkit-scrollbar-thumb {
-    background: var(--line-2);
-    border-radius: 999px;
-  }
-
-  .console-scroll::-webkit-scrollbar-track {
-    background: transparent;
+    scrollbar-color: var(--t-line2) transparent;
   }
 }
 
@@ -138,7 +136,7 @@
 .u-legend {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--haze);
+  color: var(--t-haze);
   text-align: left;
 }
 
@@ -147,20 +145,29 @@
 }
 
 .u-select {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  background: color-mix(in srgb, var(--t-accent) 16%, transparent);
 }
 
-/* Shared sky utilities */
+/* Shared sky chrome */
 .sky-grid {
-  stroke: var(--line-2);
-  opacity: 0.55;
+  stroke: var(--t-line2);
+  opacity: 0.7;
 }
 
 .sky-grid-major {
-  stroke: var(--accent);
+  stroke: var(--t-accent);
   opacity: 0.35;
 }
 
 .aladin-logo-container {
-  opacity: 0.45;
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

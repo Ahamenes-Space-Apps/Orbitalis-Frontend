@@ -72,11 +72,10 @@ export function ExplorerPage() {
           <SpectralTray candidate={detail.data ?? null} epoch={epoch} height={114} />
         </div>
 
-        {!dossierOpen && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-[150px] flex justify-center">
-            <span className="border border-[#1e466b] bg-[#0d0d0d]/95 px-2 py-1 text-[9px] text-[#94a3b8]">
-              Dossier hidden · use Inspect Dossier to reopen
-            </span>
+      <main className="relative min-h-[780px] min-w-0 flex-[999_1_560px] overflow-hidden" aria-label="Sky explorer">
+        {failed && (
+          <div role="alert" className="absolute inset-0 grid place-items-center p-8 text-center text-sm text-ink">
+            The sky data could not be loaded. If you set VITE_API_URL, check that the backend is running.
           </div>
         )}
       </section>

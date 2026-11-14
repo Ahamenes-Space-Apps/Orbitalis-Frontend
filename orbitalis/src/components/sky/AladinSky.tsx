@@ -143,7 +143,7 @@ export function AladinSky({
           showFrame: false,
           showCooLocation: false,
           showReticle: false,
-          backgroundColor: 'rgba(10, 14, 23, 1)',
+          backgroundColor: 'rgba(13, 13, 13, 1)',
           log: false,
         });
         aladin.gotoRaDec(field.center.ra, field.center.dec);

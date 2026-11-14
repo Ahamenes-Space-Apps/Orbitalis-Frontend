@@ -1,4 +1,5 @@
 import type { CandidateDetail, Epoch } from '@/data/types';
+import { palette } from '@/lib/palette';
 
 /**
  * One square cutout per epoch, drawn to scale. The stars are fixed; the ring is the candidate;
@@ -29,13 +30,13 @@ export function EpochCutouts({ candidate, epochs }: { candidate: CandidateDetail
               className="aspect-square w-full rounded-[10px] border border-line-2 bg-field"
             >
               {candidate.cutout.stars.map((s, i) => (
-                <circle key={i} cx={-s.dx} cy={-s.dy} r={(0.45 + s.mag * 1.1) * unit} fill="#CFE0FF" opacity={0.4 + s.mag * 0.5} />
+                <circle key={i} cx={-s.dx} cy={-s.dy} r={(0.45 + s.mag * 1.1) * unit} fill={palette.star} opacity={0.4 + s.mag * 0.5} />
               ))}
               {k > 0 && (
-                <circle cx={g.x} cy={-g.y} r={ringR} fill="none" stroke="#8A94AB" strokeWidth={1.5} strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+                <circle cx={g.x} cy={-g.y} r={ringR} fill="none" stroke={palette.haze} strokeWidth={1.5} strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
               )}
-              <circle cx={p.x} cy={-p.y} r={ringR} fill="none" stroke="#F2B544" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
-              <circle cx={p.x} cy={-p.y} r={0.5 * unit} fill="#F2B544" />
+              <circle cx={p.x} cy={-p.y} r={ringR} fill="none" stroke={palette.accent} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+              <circle cx={p.x} cy={-p.y} r={0.5 * unit} fill={palette.accent} />
             </svg>
             <figcaption className="flex items-baseline justify-between gap-2">
               <span className="text-sm font-semibold">{e.label}</span>

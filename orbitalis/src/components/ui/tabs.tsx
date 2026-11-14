@@ -20,7 +20,7 @@ export function TabsTrigger({ className, ...props }: React.ComponentProps<typeof
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        'min-h-7 shrink-0 cursor-pointer whitespace-nowrap px-2.5 text-[11px] text-haze transition-colors hover:text-ink data-[state=active]:bg-accent data-[state=active]:font-semibold data-[state=active]:text-canvas',
+        'min-h-9 cursor-pointer  border border-line-2 px-3 text-[13px] text-mist transition-colors hover:text-ink data-[state=active]:border-ink data-[state=active]:bg-ink data-[state=active]:font-semibold data-[state=active]:text-field',
         className,
       )}
       {...props}

@@ -8,12 +8,11 @@ import { AssistantLauncher } from '@/components/assistant/AssistantLauncher';
 import { AssistantPanel } from '@/components/assistant/AssistantPanel';
 import { cn } from '@/lib/utils';
 
-const NAV = [
-  { to: '/', label: 'Sky Explorer', end: true },
-  { to: '/spectral', label: 'Spectral Explorer', end: false },
-  { to: '/candidates', label: 'Candidate Dossier', end: false },
-  { to: '/architecture', label: 'Architecture', end: false },
-] as const;
+const navClass = ({ isActive }: { isActive: boolean }) =>
+  cn(
+    'relative px-3.5 py-2.5 text-sm text-ink no-underline transition-colors',
+    isActive ? 'text-ink font-semibold' : 'text-haze hover:text-ink',
+  );
 
 function WorkspaceTab({
   to,
@@ -71,7 +70,13 @@ export function AppShell() {
           className="flex shrink-0 items-center text-[13px] font-semibold tracking-[0.28em] text-ink no-underline"
           aria-label="ORBITALIS home"
         >
-          ORBITALIS
+         
+             <img src="/image.png" alt="" aria-hidden="true" className="size-8 object-contain" />
+         
+
+          <span className="text-[15px] font-semibold tracking-[0.26em]">
+            ORBITALIS
+          </span>
         </NavLink>
 
         <nav
@@ -91,13 +96,34 @@ export function AppShell() {
           title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
           className="grid size-8 shrink-0 cursor-pointer place-items-center border border-line bg-panel-2 text-mist transition-colors hover:border-accent hover:text-ink"
         >
-          {theme === 'dark' ? (
-            <Sun className="size-4" aria-hidden="true" />
-          ) : (
-            <Moon className="size-4" aria-hidden="true" />
-          )}
-        </button>
-      </header>
+          <motion.span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 w-1/2 rounded-[8px] bg-panel-2"
+            initial={false}
+            animate={{ x: frame === 'equatorial' ? 0 : '100%' }}
+            transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+          />
+          <Button
+            variant="segment"
+            className="relative z-10 data-[active=true]:bg-transparent"
+            data-active={frame === 'equatorial'}
+            aria-pressed={frame === 'equatorial'}
+            onClick={() => setFrame('equatorial')}
+          >
+            Equatorial
+          </Button>
+
+          <Button
+            variant="segment"
+            className="relative z-10 data-[active=true]:bg-transparent"
+            data-active={frame === 'galactic'}
+            aria-pressed={frame === 'galactic'}
+            onClick={() => setFrame('galactic')}
+          >
+            Galactic
+          </Button>
+        </div>
+      </motion.header>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">

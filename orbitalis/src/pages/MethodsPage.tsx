@@ -22,7 +22,7 @@ const LIMITATIONS = [
 ];
 
 const card =
-  'scroll-mt-[82px] rounded-[11px] border border-[#26324d] bg-[#0c1220] p-5 leading-[1.65] [&_h2]:mb-[7px] [&_h2]:text-base [&_h2]:font-semibold [&_p]:mb-2.5';
+  'scroll-mt-[82px] rounded-[11px] border border-line bg-bar p-5 leading-[1.65] [&_h2]:mb-[7px] [&_h2]:text-base [&_h2]:font-semibold [&_p]:mb-2.5';
 
 export function MethodsPage() {
   const [active, setActive] = useState<string>(SECTIONS[0][0]);
@@ -57,16 +57,16 @@ export function MethodsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080d19] px-5 pt-[18px] pb-7 text-sm text-[#e8ecf6] max-sm:px-2.5">
+    <div className="min-h-screen bg-field px-5 pt-[18px] pb-7 text-sm text-ink max-sm:px-2.5">
       <div className="mx-auto w-full max-w-[1900px]">
         <div className="mt-2 mb-[18px] flex items-start justify-between gap-5 max-sm:flex-col">
           <div>
             <h1 className="m-0 mb-1.5 text-2xl font-semibold tracking-[-0.02em]">Methods &amp; limits</h1>
-            <div className="text-xs leading-normal text-[#9aa3b8]">
+            <div className="text-xs leading-normal text-haze">
               How the search works, what the validation numbers mean, and where the method can fail.
             </div>
           </div>
-          <span className="whitespace-nowrap rounded-full bg-[#10392f] px-[9px] py-1 text-[11px] text-[#7ce5bd]">
+          <span className="whitespace-nowrap rounded-full bg-accent/12 px-[9px] py-1 text-[11px] text-accent">
             Research notes
           </span>
         </div>
@@ -74,17 +74,17 @@ export function MethodsPage() {
         <div className="grid gap-[15px] lg:grid-cols-[220px_minmax(0,1fr)]">
           <nav
             aria-label="On this page"
-            className="h-max rounded-[11px] border border-[#26324d] bg-[#0c1220] p-[15px] max-lg:flex max-lg:gap-1.5 max-lg:overflow-x-auto lg:sticky lg:top-[82px]"
+            className="h-max rounded-[11px] border border-line bg-bar p-[15px] max-lg:flex max-lg:gap-1.5 max-lg:overflow-x-auto lg:sticky lg:top-[82px]"
           >
             {SECTIONS.map(([id, label]) => (
               <a
                 key={id}
                 href={`#${id}`}
                 aria-current={active === id ? 'true' : undefined}
-                className={`block whitespace-nowrap border-l-2 px-2 py-[9px] text-xs no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#69a9ff] ${
+                className={`block whitespace-nowrap border-l-2 px-2 py-[9px] text-xs no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   active === id
-                    ? 'border-[#5aa0ff] bg-[#17305a66] text-[#dcecff]'
-                    : 'border-transparent text-[#9aa3b8] hover:text-[#e8ecf6]'
+                    ? 'border-accent bg-accent/15 text-ink'
+                    : 'border-transparent text-haze hover:text-ink'
                 }`}
               >
                 {label}
@@ -126,21 +126,21 @@ export function MethodsPage() {
               </p>
               <div className="my-3.5 grid gap-2.5 sm:grid-cols-3">
                 {STATS.map(([label, value, note]) => (
-                  <div key={label} className="rounded-[9px] border border-[#293752] bg-[#111b30] p-[13px]">
-                    <span className="text-[11px] text-[#9aa3b8]">{label}</span>
+                  <div key={label} className="rounded-[9px] border border-line bg-panel-2 p-[13px]">
+                    <span className="text-[11px] text-haze">{label}</span>
                     <strong className="my-1 block text-[22px]">{value}</strong>
-                    <span className="text-[11px] text-[#9aa3b8]">{note}</span>
+                    <span className="text-[11px] text-haze">{note}</span>
                   </div>
                 ))}
               </div>
-              <p className="text-xs leading-normal text-[#9aa3b8]">
+              <p className="text-xs leading-normal text-haze">
                 Results apply to this experiment only. These illustrative values are demo content, not a live
                 validation run.
               </p>
               <button
                 type="button"
                 onClick={runValidation}
-                className="cursor-pointer rounded-lg border border-[#4388ef] bg-[#1555bb] px-3.5 py-[9px] text-xs text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#69a9ff]"
+                className="cursor-pointer rounded-lg border border-accent bg-accent px-3.5 py-[9px] text-xs text-field focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 Run validation
               </button>
@@ -174,7 +174,7 @@ export function MethodsPage() {
       {toast && (
         <div
           role="status"
-          className="fixed right-5 bottom-5 z-20 rounded-[9px] border border-[#3c5a86] bg-[#14233c] px-4 py-3 text-[#eaf2ff] shadow-[0_10px_30px_#0008]"
+          className="fixed right-5 bottom-5 z-20 rounded-[9px] border border-line-2 bg-panel px-4 py-3 text-ink shadow-[0_10px_30px_#0008]"
         >
           {toast}
         </div>

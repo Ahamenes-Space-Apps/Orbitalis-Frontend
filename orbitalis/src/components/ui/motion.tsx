@@ -106,7 +106,7 @@ export function AnimatedBar({
 }) {
   const reduce = useReducedMotion();
   return (
-    <div className={cn('overflow-hidden rounded-full bg-[#1a2338]', className)} {...props}>
+    <div className={cn('overflow-hidden rounded-full bg-panel-2', className)} {...props}>
       <motion.div
         className={cn('h-full rounded-full', barClassName)}
         initial={reduce ? false : { width: 0 }}

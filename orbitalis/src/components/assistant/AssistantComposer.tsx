@@ -41,7 +41,7 @@ export function AssistantComposer({
         onKeyDown={onKeyDown}
         rows={2}
         placeholder="Ask about this field or selection…"
-        className="w-full resize-none border border-line bg-canvas px-2 py-1.5 text-[11px] text-ink outline-none transition-colors placeholder:text-haze focus-visible:border-accent"
+        className="w-full resize-none rounded-xl border border-line-2 bg-panel px-3 py-2.5 text-sm text-ink outline-none transition-colors placeholder:text-haze focus-visible:border-accent"
       />
 
       <div className="flex items-center justify-between gap-2">

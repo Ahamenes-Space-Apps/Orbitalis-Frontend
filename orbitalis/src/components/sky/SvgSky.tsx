@@ -1,6 +1,6 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { offsetToSky, skyToOffset } from '@/lib/coords';
-import { CONSTELLATIONS } from '@/lib/constellations';
+import { sky } from '@/lib/palette';
 import { KIND_COLOR, type SkyItem } from '@/lib/skyItems';
 import type { SkyRendererProps } from './types';
 
@@ -158,8 +158,8 @@ export function SvgSky({
   return (
     <div
       ref={wrapRef}
-      className="absolute inset-0 touch-none overflow-hidden bg-[#0d0d0d]"
-      style={{ cursor: drag.current ? 'grabbing' : 'grab' }}
+      className="absolute inset-0 touch-none overflow-hidden"
+      style={{ background: sky.backdrop, cursor: drag.current ? 'grabbing' : 'grab' }}
       data-testid="sky-svg"
     >
       <svg
@@ -186,31 +186,18 @@ export function SvgSky({
           drag.current = null;
         }}
       >
-        {showGrid && (
-          <g aria-hidden="true">
-            {gridLines.map((l) => (
-              <g key={l.key}>
-                <line x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="rgba(103,186,244,0.11)" strokeWidth="1" />
-                {l.label && (
-                  <text x={l.lx} y={l.ly} fill="#64748b" fontSize="9" fontFamily="var(--font-mono)">
-                    {l.label}
-                  </text>
-                )}
-              </g>
-            ))}
-            <line
-              x1={0}
-              y1={size.h / 2 + size.w * 0.216}
-              x2={size.w}
-              y2={size.h / 2 - size.w * 0.216}
-              stroke="rgba(245,158,11,0.2)"
-              strokeDasharray="6 6"
-            />
-            <text x={size.w - 128} y={size.h - 18} fill="#94a3b8" fontSize="9" fontFamily="var(--font-mono)">
-              ecliptic 23.44°
-            </text>
-          </g>
-        )}
+        <g aria-hidden="true">
+          {gridLines.map((l) => (
+            <g key={l.key}>
+              <line x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={sky.grid} />
+              {l.label && (
+                <text x={l.lx} y={l.ly} fill={sky.gridLabel} fontSize="11" fontFamily="var(--font-mono)">
+                  {l.label}
+                </text>
+              )}
+            </g>
+          ))}
+        </g>
 
         {showConstellations && (
           <g aria-hidden="true">
@@ -321,9 +308,9 @@ export function SvgSky({
           );
         })}
 
-        <g aria-hidden="true" transform={`translate(18, ${size.h - 40})`}>
-          <path d={`M0 0 v6 h${barArcsec * scale} v-6`} fill="none" stroke="#64748b" strokeWidth="1" />
-          <text x="0" y="20" fill="#94a3b8" fontSize="9" fontFamily="var(--font-mono)">
+        <g aria-hidden="true" transform={`translate(20, ${size.h - 172})`}>
+          <path d={`M0 0 v6 h${barArcsec * scale} v-6`} fill="none" stroke={sky.scaleBar} strokeWidth="1.5" />
+          <text x="0" y="22" fill={sky.scaleBar} fontSize="11" fontFamily="var(--font-mono)">
             {formatScale(barArcsec)} · ≈ {Math.round(barArcsec / field.pixelScaleArcsec)} SPHEREx pixels
           </text>
         </g>

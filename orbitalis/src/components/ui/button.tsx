@@ -8,12 +8,12 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-accent text-canvas hover:bg-accent-soft',
-        outline: 'border border-line-2 bg-transparent text-ink hover:border-accent hover:text-accent',
+        default: 'bg-accent text-field hover:bg-accent-soft',
+        outline: 'border border-line-2 text-ink hover:bg-panel-2',
         ghost: 'text-mist hover:bg-panel-2 hover:text-ink',
-        pill: 'rounded-none border border-line-2 bg-transparent text-haze hover:border-accent hover:text-ink data-[active=true]:border-accent data-[active=true]:text-accent',
+        pill: 'rounded-full border border-line-2 bg-bar/90 text-mist hover:text-ink data-[active=true]:border-accent data-[active=true]:bg-accent/12 data-[active=true]:text-accent',
         segment:
-          'rounded-none bg-transparent text-haze hover:text-ink data-[active=true]:bg-accent data-[active=true]:text-canvas',
+          'rounded-none bg-transparent text-haze hover:text-ink data-[active=true]:bg-panel-2 data-[active=true]:text-ink',
       },
       size: {
         default: 'min-h-9 px-3.5',

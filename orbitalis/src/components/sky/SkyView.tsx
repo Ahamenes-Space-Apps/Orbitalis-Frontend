@@ -1,22 +1,20 @@
-import { lazy, Suspense, useCallback, useMemo, useRef, useState } from 'react';
-import { Crosshair, Minus, PanelRightClose, PanelRightOpen, Plus } from 'lucide-react';
-import { buildSkyItems } from '@/lib/skyItems';
-import {
-  deltaMagAt,
-  epochForField,
-  epochMjd,
-  epochPosition,
-  formatDeltaMag,
-  formatMjd,
-  formatUtcDate,
-  mjdToDate,
-} from '@/lib/epochs';
-import { formatDec, formatRa, padId } from '@/lib/coords';
-import { useUi } from '@/store/useUi';
-import type { CandidateSummary, FieldInfo, StationarySource } from '@/data/types';
-import { SvgSky } from './SvgSky';
-import { EpochDock } from './EpochDock';
-import type { SkyHandle } from './types';
+import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
+import { motion } from "motion/react";
+import { Crosshair, Minus, Plus } from "lucide-react";
+import { buildSkyItems } from "@/lib/skyItems";
+import { useUi, type LayerVisibility } from "@/store/useUi";
+import type {
+  CandidateSummary,
+  FieldInfo,
+  StationarySource,
+} from "@/data/types";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { SvgSky } from "./SvgSky";
+import { TimelinePanel } from "./TimelinePanel";
+import type { SkyHandle } from "./types";
+import { BandStrip } from "./BandStrip";
 
 const AladinSky = lazy(() => import('./AladinSky').then((m) => ({ default: m.AladinSky })));
 
@@ -77,6 +75,34 @@ export function SkyView({
   const onFailed = useCallback((reason: string) => setAladinFailure(reason), []);
   const onSelect = useCallback((id: number) => select(id), [select]);
 
+  const counts = {
+    stationary: stationary.length,
+    moving: candidates.filter((c) => c.cls === "moving").length,
+    variable: candidates.filter((c) => c.cls === "variable").length,
+  };
+
+  const layerChips: {
+    key: keyof LayerVisibility;
+    label: string;
+    swatch: string;
+  }[] = [
+    {
+      key: "stationary",
+      label: `Stationary ${counts.stationary}`,
+      swatch: "size-[7px] rounded-full bg-star",
+    },
+    {
+      key: "moving",
+      label: `Moving ${counts.moving}`,
+      swatch: "size-3 rounded-full border-[1.5px] border-accent",
+    },
+    {
+      key: "variable",
+      label: `Variable ${counts.variable}`,
+      swatch: "size-3 rounded-full border-[1.5px] border-dashed border-accent-2",
+    },
+  ];
+
   const selected = candidates.find((c) => c.id === selectedId) ?? null;
   const current = epochForField(field, epoch);
   const pos = selected ? epochPosition(selected.positions, epoch) : field.center;
@@ -112,11 +138,63 @@ export function SkyView({
         />
       )}
 
-      <div className="pointer-events-none absolute top-3 left-3 z-10">
-        <div className="pointer-events-auto min-w-[236px] border border-[#1e466b]/80 bg-[#0d0d0d]/95 px-2.5 py-2">
-          <div className="mb-1.5 flex items-baseline justify-between gap-4 border-b border-[#1e466b]/50 pb-1.5">
-            <span className="font-mono text-[9px] tabular-nums text-[#67baf4]">
-              EPOCH {epoch} / {field.epochs.length}
+      <div className="pointer-events-none absolute top-4 right-5 left-5 flex flex-wrap items-start justify-between gap-3">
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="pointer-events-auto flex max-w-full flex-col items-start gap-2.5"
+        >
+        <div className="flex flex-col gap-3">
+  <div
+    className="flex flex-wrap items-center gap-2"
+    role="group"
+    aria-label="Layers"
+  >
+    {layerChips.map((c) => (
+      <Button
+        key={c.key}
+        variant="pill"
+        size="sm"
+        data-active={layers[c.key]}
+        aria-pressed={layers[c.key]}
+        onClick={() => toggleLayer(c.key)}
+        className="data-[active=true]:border-ink/70 data-[active=true]:bg-ink/25 data-[active=true]:text-field"
+      >
+        <span aria-hidden="true" className={c.swatch} />
+        {c.label}
+      </Button>
+    ))}
+    <Button
+      variant="pill"
+      size="sm"
+      data-active={trails}
+      aria-pressed={trails}
+      onClick={() => setTrails(!trails)}
+      className="data-[active=true]:border-ink/70 data-[active=true]:bg-ink/25 data-[active=true]:text-field"
+    >
+      Trails
+    </Button>
+  </div>
+
+  <div className="bg-bar/90 px-[22px] py-4 backdrop-blur-md">
+    <BandStrip />
+  </div>
+</div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-line-2 bg-bar/90 px-3 py-1.5 text-xs text-mist">
+            <span>
+              Motion exaggerated ×{gain} so it is visible. Real shifts are
+              sub-pixel.
+            </span>
+            <span className="flex w-36 items-center">
+              <Slider
+                thumbLabel="Motion exaggeration"
+                min={1}
+                max={50}
+                step={1}
+                value={[gain]}
+                onValueChange={(v) => setMotionGain(v[0])}
+              />
             </span>
             <span className="font-mono text-[9px] tabular-nums text-[#94a3b8]">{current?.offsetLabel}</span>
           </div>
@@ -128,11 +206,16 @@ export function SkyView({
             <HudRow label="Dec" value={formatDec(pos.dec)} />
             <HudRow label="Δm" value={selected ? formatDeltaMag(dm) : '—'} />
           </div>
-          <div className="mt-1.5 border-t border-[#1e466b]/50 pt-1 font-mono text-[8px] tabular-nums text-[#64748b]">
-            motion ×{gain} · {tempMode === 'tempdiff' ? 'temporal difference' : tempMode}
-          </div>
-        </div>
-      </div>
+          {aladinFailure && (
+            <div
+              role="status"
+              className="max-w-md rounded-lg border border-accent/40 bg-bar/95 px-3 py-2 text-xs text-mist"
+            >
+              Aladin Lite could not start ({aladinFailure}). Showing the
+              built-in sky view instead.
+            </div>
+          )}
+        </motion.div>
 
       <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
         <button

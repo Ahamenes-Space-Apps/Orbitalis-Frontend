@@ -69,7 +69,7 @@ export function SelectedSummary() {
             to={`/candidates/${c.id}`}
             className={cn(
               buttonVariants(),
-              'bg-white text-black no-underline hover:text-[#1a1204]',
+              'bg-ink text-field no-underline',
             )}
           >
             Open dossier

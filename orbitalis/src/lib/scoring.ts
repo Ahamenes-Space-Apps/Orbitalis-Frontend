@@ -1,3 +1,4 @@
+import { palette } from '@/lib/palette';
 import type { KnownMatch, ScoreComponents } from '@/data/types';
 
 export interface Weights {
@@ -14,10 +15,10 @@ export const DEFAULT_WEIGHTS: Weights = { M: 0.4, B: 0.05, S: 0.3, T: 0.25 };
 export const KNOWN_OBJECT_FACTOR = 0.7;
 
 export const COMPONENT_META: { key: keyof ScoreComponents; short: string; name: string; color: string }[] = [
-  { key: 'M', short: 'M', name: 'Motion significance', color: '#F2B544' },
-  { key: 'B', short: 'B', name: 'Brightness variation', color: '#8FA0C8' },
-  { key: 'S', short: 'S', name: 'Spectral anomaly', color: '#A596FF' },
-  { key: 'T', short: 'T', name: 'Temporal consistency', color: '#4FD1B5' },
+  { key: 'M', short: 'M', name: 'Motion significance', color: palette.accent },
+  { key: 'B', short: 'B', name: 'Brightness variation', color: palette.ink },
+  { key: 'S', short: 'S', name: 'Spectral anomaly', color: palette.accent2 },
+  { key: 'T', short: 'T', name: 'Temporal consistency', color: palette.accentSoft },
 ];
 
 export function normalizeWeights(w: Weights): Weights {

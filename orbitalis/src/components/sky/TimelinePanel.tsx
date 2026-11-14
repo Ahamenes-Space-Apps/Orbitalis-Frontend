@@ -5,7 +5,6 @@ import type { FieldInfo } from '@/data/types';
 import { useUi } from '@/store/useUi';
 import { cn } from '@/lib/utils';
 import { DURATION, EASE, springSoft } from '@/lib/motion';
-import { BandStrip } from './BandStrip';
 
 const EPOCH_MS = 1800;
 
@@ -50,8 +49,8 @@ export function TimelinePanel({ field }: { field: FieldInfo }) {
           className={cn(
             'relative flex size-12 cursor-pointer items-center justify-center rounded-full border-[1.5px] transition-colors',
             playing
-              ? 'border-amber bg-amber text-[#1a1204]'
-              : 'border-amber bg-amber/12 text-amber',
+              ? 'border-accent bg-accent text-field'
+              : 'border-accent bg-accent/12 text-accent',
           )}
         >
           <AnimatePresence mode="wait" initial={false}>
@@ -75,7 +74,7 @@ export function TimelinePanel({ field }: { field: FieldInfo }) {
         <AnimatePresence>
           {playing && (
             <svg
-              className="pointer-events-none absolute inset-0 size-12 -rotate-90 text-amber"
+              className="pointer-events-none absolute inset-0 size-12 -rotate-90 text-accent"
               viewBox="0 0 48 48"
               aria-hidden="true"
             >
@@ -113,7 +112,7 @@ export function TimelinePanel({ field }: { field: FieldInfo }) {
           <div aria-hidden="true" className="absolute top-3.5 right-9 left-9 h-0.5 bg-line-2" />
           <motion.div
             aria-hidden="true"
-            className="absolute top-3.5 left-9 h-0.5 origin-left bg-amber"
+            className="absolute top-3.5 left-9 h-0.5 origin-left bg-accent"
             style={{ width: 'calc(100% - 72px)' }}
             initial={false}
             animate={{ scaleX: frac }}
@@ -136,10 +135,10 @@ export function TimelinePanel({ field }: { field: FieldInfo }) {
                     className={cn(
                       'size-[22px] rounded-full border-2',
                       active
-                        ? 'border-amber bg-amber'
+                        ? 'border-accent bg-accent'
                         : done
-                          ? 'border-amber bg-amber/35'
-                          : 'border-[#3a4666] bg-bar',
+                          ? 'border-accent bg-accent/35'
+                          : 'border-line-2 bg-bar',
                     )}
                     initial={false}
                     animate={{ scale: active ? 1.12 : 1 }}
@@ -161,7 +160,7 @@ export function TimelinePanel({ field }: { field: FieldInfo }) {
         </div>
       </div>
 
-      <BandStrip />
+
     </section>
   );
 }

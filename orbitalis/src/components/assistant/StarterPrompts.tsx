@@ -23,7 +23,7 @@ export function StarterPrompts({
             type="button"
             onClick={() => onPick(item.prompt)}
             disabled={disabled}
-            className="cursor-pointer border border-line bg-canvas px-2 py-1.5 text-left text-[10px] text-mist transition-colors hover:border-accent hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+            className="cursor-pointer rounded-xl border border-line-2 bg-panel px-3 py-2 text-left text-[13px] text-mist transition-colors hover:border-accent-2 hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
           >
             {item.label}
           </button>

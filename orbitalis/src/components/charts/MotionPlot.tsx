@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import * as Plot from '@observablehq/plot';
 import { useWidth } from '@/lib/useWidth';
+import { chartFor, paletteFor } from '@/lib/palette';
+import { useUi } from '@/store/useUi';
 
 interface Props {
   /** Offsets from the epoch 1 position, arcseconds. */
@@ -13,11 +15,14 @@ interface Props {
 export function MotionPlot({ offsets, sigma }: Props) {
   const [wrapRef, measured] = useWidth<HTMLDivElement>();
   const mount = useRef<HTMLDivElement>(null);
+  const theme = useUi((s) => s.theme);
   const width = Math.max(300, Math.min(520, measured || 480));
 
   useEffect(() => {
     const el = mount.current;
     if (!el) return;
+    const palette = paletteFor(theme);
+    const chart = chartFor(theme);
     const xs = offsets.map((o) => o.dx);
     const ys = offsets.map((o) => o.dy);
     const spanX = Math.max(...xs) - Math.min(...xs);
@@ -41,27 +46,27 @@ export function MotionPlot({ offsets, sigma }: Props) {
       marginBottom: 44,
       style: {
         background: 'transparent',
-        color: '#AEB7CC',
-        fontFamily: '"IBM Plex Mono", monospace',
-        fontSize: '12px',
+        color: palette.mist,
+        fontFamily: '"JetBrains Mono Variable", ui-monospace, monospace',
+        fontSize: '11px',
         overflow: 'visible',
       },
       x: { domain: [x0, x1], label: 'ΔRA·cos δ (″) →', grid: true, ticks: 6 },
       y: { domain: [y0, y1], label: '↑ ΔDec (″)', grid: true, ticks: 6 },
       marks: [
-        Plot.ruleX([0], { stroke: '#2B3550' }),
-        Plot.ruleY([0], { stroke: '#2B3550' }),
-        Plot.line(pts, { x: 'x', y: 'y', stroke: '#F2B544', strokeOpacity: 0.7, strokeWidth: 2 }),
-        Plot.dot(pts, { x: 'x', y: 'y', r: Math.max(3, sigma * pxPerArcsec), stroke: '#8A94AB', strokeDasharray: '3 3', fill: 'none' }),
-        Plot.dot(pts, { x: 'x', y: 'y', r: 5, fill: '#F2B544' }),
-        Plot.text(pts, { x: 'x', y: 'y', text: 'tag', dx: 14, dy: -12, fill: '#E6EAF2' }),
+        Plot.ruleX([0], { stroke: chart.ticks }),
+        Plot.ruleY([0], { stroke: chart.ticks }),
+        Plot.line(pts, { x: 'x', y: 'y', stroke: palette.accent, strokeOpacity: 0.75, strokeWidth: 2 }),
+        Plot.dot(pts, { x: 'x', y: 'y', r: Math.max(3, sigma * pxPerArcsec), stroke: chart.axis, strokeDasharray: '3 3', fill: 'none' }),
+        Plot.dot(pts, { x: 'x', y: 'y', r: 4.5, fill: palette.accent }),
+        Plot.text(pts, { x: 'x', y: 'y', text: 'tag', dx: 12, dy: -10, fill: palette.ink }),
       ],
     });
     el.replaceChildren(plot);
     return () => {
       plot.remove();
     };
-  }, [offsets, sigma, width]);
+  }, [offsets, sigma, width, theme]);
 
   return (
     <div ref={wrapRef} className="w-full">
