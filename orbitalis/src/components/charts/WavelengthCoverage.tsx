@@ -67,14 +67,17 @@ export function WavelengthCoverage({
     [bins],
   );
 
-  const domain = useMemo(() => {
-    const values = [
-      ...ordered.map((bin) => bin.wavelength),
-      ...spectrumPoints.map((point) => wavelengthKey(point.wavelength_um)),
-    ].sort((a, b) => a - b);
-    if (values.length === 0) return null;
-    return { min: values[0], max: values[values.length - 1] };
+  const coverageWavelengths = useMemo(() => {
+    const values = new Set<number>();
+    for (const bin of ordered) values.add(bin.wavelength);
+    for (const point of spectrumPoints) values.add(wavelengthKey(point.wavelength_um));
+    return [...values].sort((a, b) => a - b);
   }, [ordered, spectrumPoints]);
+
+  const domain = useMemo(() => {
+    if (coverageWavelengths.length === 0) return null;
+    return { min: coverageWavelengths[0], max: coverageWavelengths[coverageWavelengths.length - 1] };
+  }, [coverageWavelengths]);
 
   if (!domain) {
     return (
@@ -93,20 +96,12 @@ export function WavelengthCoverage({
   const height = 112;
   const pad = { top: 18, right: 12, bottom: 22, left: 12 };
   const plotWidth = width - pad.left - pad.right;
-  const histogramHeight = 44;
-  const spectrumY = pad.top + histogramHeight + 18;
-  const selectionTop = pad.top - 6;
-  const selectionBottom = spectrumY + 8;
+  const histogramHeight = 42;
+  const sedBarHeight = 14;
+  const sedBaseline = pad.top + histogramHeight + 28;
+  const sedTop = sedBaseline - sedBarHeight;
 
   const xScale = (value: number) => pad.left + ((value - min) / span) * plotWidth;
-
-  const displayRange = activeRange
-    ? {
-        low: Math.max(min, activeRange[0]),
-        high: Math.min(max, activeRange[1]),
-      }
-    : null;
-  const hasDisplayRange = Boolean(displayRange && displayRange.low <= displayRange.high);
 
   const framesInRange = activeRange
     ? frames.filter((frame) => inWavelengthRange(frame.wavelength_um, activeRange)).length
@@ -116,9 +111,12 @@ export function WavelengthCoverage({
     : spectrumPoints.length;
 
   const maxCount = Math.max(...ordered.map((bin) => bin.count), 1);
+  const slotCount = Math.max(coverageWavelengths.length, 1);
+  const barWidth = Math.max(1.5, Math.min(12, plotWidth / slotCount - 1));
   const detectors = [...new Set(frames.map((frame) => frame.detector))].sort((a, b) => a - b);
   const selected =
     selectedWavelength !== null && Number.isFinite(selectedWavelength) ? selectedWavelength : null;
+  const selectedKey = selected !== null ? wavelengthKey(selected) : null;
 
   const clampWavelength = (value: number) => Math.min(max, Math.max(min, value));
   const snapRange = (a: number, b: number): WavelengthRange => {
@@ -238,42 +236,11 @@ export function WavelengthCoverage({
           viewBox={`0 0 ${width} ${height}`}
           className="block h-auto w-full"
           role="img"
-          aria-label={`Wavelength coverage from ${frames.length} stored frames: ${ordered.length} distinct wavelengths between ${formatWavelength(
+          aria-label={`Wavelength coverage from ${frames.length} stored frames and ${spectrumPoints.length} SED bins: ${coverageWavelengths.length} distinct wavelengths between ${formatWavelength(
             min,
           )} and ${formatWavelength(max)}.`}
         >
           <rect x="0" y="0" width={width} height={height} fill="#0c1220" rx="8" />
-
-          {hasDisplayRange && displayRange && (
-            <g aria-hidden="true">
-              <rect
-                x={xScale(displayRange.low)}
-                y={selectionTop}
-                width={Math.max(1, xScale(displayRange.high) - xScale(displayRange.low))}
-                height={selectionBottom - selectionTop}
-                fill="#feb832"
-                fillOpacity="0.08"
-              />
-              <line
-                x1={xScale(displayRange.low)}
-                x2={xScale(displayRange.low)}
-                y1={selectionTop}
-                y2={selectionBottom}
-                stroke="#feb832"
-                strokeOpacity="0.55"
-                strokeWidth="1"
-              />
-              <line
-                x1={xScale(displayRange.high)}
-                x2={xScale(displayRange.high)}
-                y1={selectionTop}
-                y2={selectionBottom}
-                stroke="#feb832"
-                strokeOpacity="0.55"
-                strokeWidth="1"
-              />
-            </g>
-          )}
 
           <line
             x1={pad.left}
@@ -286,19 +253,20 @@ export function WavelengthCoverage({
 
           {ordered.map((bin) => {
             const x = xScale(bin.wavelength);
-            const barWidth = Math.max(1.5, Math.min(12, plotWidth / ordered.length - 1));
             const barHeight = (bin.count / maxCount) * histogramHeight;
             const dimmed = activeRange !== null && !inWavelengthRange(bin.wavelength, activeRange);
+            const selectedBin = selectedKey !== null && bin.wavelength === selectedKey;
             return (
               <g key={bin.wavelength}>
                 <rect
+                  data-testid="frame-bin-bar"
                   x={x - barWidth / 2}
                   y={pad.top + histogramHeight - barHeight}
                   width={barWidth}
                   height={barHeight}
                   rx="1"
-                  fill="#55d6e8"
-                  fillOpacity={dimmed ? 0.16 : 0.55}
+                  fill="#7f8ba5"
+                  fillOpacity={dimmed ? 0.16 : selectedBin ? 0.85 : 0.55}
                 />
                 <title>
                   {`${formatWavelength(bin.wavelength)} · ${bin.count} frame${
@@ -310,20 +278,20 @@ export function WavelengthCoverage({
           })}
 
           {selected !== null && selected >= min && selected <= max && (
-            <g>
+            <g data-testid="selected-wavelength-marker">
               <line
                 x1={xScale(selected)}
                 x2={xScale(selected)}
                 y1={pad.top - 4}
-                y2={spectrumY + 6}
-                stroke="#feb832"
+                y2={sedBaseline + 4}
+                stroke="#e8eef8"
                 strokeWidth="1.2"
               />
               <text
                 x={xScale(selected)}
                 y={pad.top - 7}
                 textAnchor="middle"
-                fill="#feb832"
+                fill="#e8eef8"
                 fontSize="9"
                 fontFamily="'IBM Plex Mono', monospace"
               >
@@ -334,7 +302,7 @@ export function WavelengthCoverage({
 
           <text
             x={pad.left}
-            y={pad.top + histogramHeight + 17}
+            y={sedTop - 4}
             fill="#7f8ba5"
             fontSize="9"
             fontFamily="'IBM Plex Mono', monospace"
@@ -345,7 +313,7 @@ export function WavelengthCoverage({
           {spectrumPoints.length === 0 && (
             <text
               x={width - pad.right}
-              y={spectrumY + 3}
+              y={sedBaseline + 3}
               textAnchor="end"
               fill="#5b6884"
               fontSize="9"
@@ -357,34 +325,61 @@ export function WavelengthCoverage({
 
           {spectrumPoints.map((point) => {
             const x = xScale(point.wavelength_um);
+            const pointKey = wavelengthKey(point.wavelength_um);
             const dimmed = activeRange !== null && !inWavelengthRange(point.wavelength_um, activeRange);
-            const label = `${formatWavelength(point.wavelength_um)} · ${
-              point.flux_mjy === null
-                ? 'masked'
-                : point.detected
-                  ? 'detected'
-                  : 'upper limit'
+            const selectedSed = selectedKey !== null && pointKey === selectedKey;
+            const masked = point.flux_mjy === null;
+            const detected = !masked && point.detected;
+            const state = masked
+              ? 'masked'
+              : detected
+                ? 'detected'
+                : point.upper_limit_mjy !== null
+                  ? 'upper limit'
+                  : 'not detected';
+            const label = `${formatWavelength(point.wavelength_um)} · ${state} · ${point.n_frames} frame${
+              point.n_frames === 1 ? '' : 's'
             }`;
             return (
-              <g key={`${point.wavelength_um}-${point.n_frames}`} opacity={dimmed ? 0.22 : 1}>
-                {point.flux_mjy === null ? (
-                  <text
-                    x={x}
-                    y={spectrumY + 3}
-                    textAnchor="middle"
-                    fill="#5b6884"
-                    fontSize="9"
-                  >
-                    ×
-                  </text>
-                ) : point.detected ? (
-                  <circle cx={x} cy={spectrumY} r="2.4" fill="#55d6e8" />
-                ) : (
-                  <path
-                    d={`M${x - 3},${spectrumY - 3} L${x + 3},${spectrumY - 3} L${x},${spectrumY + 3} Z`}
-                    fill="none"
-                    stroke="#f5b942"
+              <g key={`${point.wavelength_um}-${point.n_frames}`}>
+                {masked ? (
+                  <rect
+                    data-testid="sed-bin-bar"
+                    x={x - barWidth / 2}
+                    y={sedTop}
+                    width={barWidth}
+                    height={sedBarHeight}
+                    rx="1"
+                    fill="#7f8ba5"
+                    fillOpacity={dimmed ? 0.06 : selectedSed ? 0.3 : 0.14}
+                    stroke="#7f8ba5"
+                    strokeOpacity={dimmed ? 0.2 : selectedSed ? 0.8 : 0.55}
+                    strokeDasharray="2 2"
                     strokeWidth="1"
+                  />
+                ) : detected ? (
+                  <rect
+                    data-testid="sed-bin-bar"
+                    x={x - barWidth / 2}
+                    y={sedTop}
+                    width={barWidth}
+                    height={sedBarHeight}
+                    rx="1"
+                    fill="#7f8ba5"
+                    fillOpacity={dimmed ? 0.16 : selectedSed ? 0.95 : 0.7}
+                  />
+                ) : (
+                  <rect
+                    data-testid="sed-bin-bar"
+                    x={x - barWidth / 2}
+                    y={sedTop}
+                    width={barWidth}
+                    height={sedBarHeight}
+                    rx="1"
+                    fill="none"
+                    stroke="#7f8ba5"
+                    strokeOpacity={dimmed ? 0.25 : selectedSed ? 0.95 : 0.7}
+                    strokeWidth="1.4"
                   />
                 )}
                 <title>{label}</title>

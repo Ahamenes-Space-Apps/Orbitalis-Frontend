@@ -123,6 +123,26 @@ describe('SpectrumView', () => {
     expect(container.querySelectorAll('g[opacity="0.22"]')).toHaveLength(1);
   });
 
+  it('shows partial measurements when the SED is insufficient but bins exist', () => {
+    render(
+      <SpectrumView
+        spectrum={{
+          status: 'insufficient_data',
+          reason: 'no significant detections: 1 wavelength bins detected (need 3)',
+          points: [sedPoint({ wavelength_um: 1.1 })],
+          method: { kind: 'spectrum', note: 'quick-look SED; not calibrated', calibrated: false },
+        }}
+      />,
+    );
+
+    expect(screen.getByText(/not enough data for a spectral energy distribution/i)).toBeVisible();
+    expect(screen.getByText(/1 wavelength bins detected \(need 3\)/i)).toBeVisible();
+    expect(
+      screen.getByRole('img', { name: /Partial wavelength measurements: 1 detected bins/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Partial wavelength measurements/i)).toBeInTheDocument();
+  });
+
   it('shows the honest reason when the SED has insufficient data', () => {
     render(
       <SpectrumView
@@ -179,7 +199,7 @@ describe('LightcurveChart', () => {
 
 describe('WavelengthCoverage', () => {
   it('is read-only by default and counts only stored wavelengths', () => {
-    render(
+    const { container } = render(
       <WavelengthCoverage
         frames={[
           { wavelength_um: 0.75, detector: 1 },
@@ -191,7 +211,9 @@ describe('WavelengthCoverage', () => {
     );
 
     expect(
-      screen.getByRole('img', { name: /3 stored frames: 2 distinct wavelengths/i }),
+      screen.getByRole('img', {
+        name: /3 stored frames and 3 SED bins: 3 distinct wavelengths/i,
+      }),
     ).toBeInTheDocument();
     expect(screen.getByText(/read-only · from stored frames/i)).toBeInTheDocument();
     expect(screen.getByText(/2 wavelengths · 3 frames/i)).toBeInTheDocument();
@@ -199,6 +221,9 @@ describe('WavelengthCoverage', () => {
       '0.75–1.60 µm · all 3 frames · all 3 SED bins',
     );
     expect(screen.queryByText(/102 bands/i)).not.toBeInTheDocument();
+    expect(container.querySelectorAll('[data-testid="frame-bin-bar"]')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-testid="sed-bin-bar"]')).toHaveLength(3);
+    expect(container.querySelector('svg')?.innerHTML).not.toContain('#55d6e8');
   });
 
   it('labels a selected range with real frame and SED counts', () => {
@@ -219,7 +244,26 @@ describe('WavelengthCoverage', () => {
     expect(screen.getByTestId('wavelength-range-label')).toHaveTextContent(
       '0.75–1.10 µm · 3 of 5 frames · 2 of 3 SED bins',
     );
-    expect(container.querySelectorAll('g[opacity="0.22"]')).toHaveLength(1);
+    expect(container.querySelectorAll('rect[fill-opacity="0.16"]')).toHaveLength(2);
+    expect(container.querySelector('svg')?.innerHTML).not.toContain('#feb832');
+  });
+
+  it('marks the current stored wavelength without adding a colour scale', () => {
+    const { container } = render(
+      <WavelengthCoverage
+        frames={[
+          { wavelength_um: 0.75, detector: 1 },
+          { wavelength_um: 1.1, detector: 1 },
+          { wavelength_um: 1.6, detector: 1 },
+        ]}
+        selectedWavelength={1.1}
+      />,
+    );
+
+    const marker = screen.getByTestId('selected-wavelength-marker');
+    expect(marker).toHaveTextContent('1.10 µm');
+    expect(marker.querySelector('line')).toHaveAttribute('stroke', '#e8eef8');
+    expect(container.querySelector('svg')?.innerHTML).not.toContain('#55d6e8');
   });
 
   it('selects and clears a wavelength interval from the keyboard', async () => {

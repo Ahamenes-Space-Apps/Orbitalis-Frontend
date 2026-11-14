@@ -49,22 +49,6 @@ export function SpectrumView({
     (a, b) => a.wavelength_um - b.wavelength_um,
   );
 
-  if (spectrum.status !== 'ok' || points.length === 0) {
-    return (
-      <div className="flex flex-col gap-1.5 rounded-lg border border-line bg-bar px-3 py-3">
-        <p className="m-0 text-[13px] font-medium text-mist">
-          Not enough data for a spectral energy distribution
-        </p>
-        <p className="m-0 text-[12px] leading-snug text-haze">
-          {spectrum.reason ?? 'The archive did not return usable SED points.'}
-        </p>
-        {spectrum.method?.note && (
-          <p className="m-0 text-[11px] leading-snug text-haze">{spectrum.method.note}</p>
-        )}
-      </div>
-    );
-  }
-
   const measured = points.filter(
     (point) =>
       point.flux_mjy !== null &&
@@ -81,7 +65,26 @@ export function SpectrumView({
     return [];
   });
 
-  if (measured.length === 0 || ys.length === 0) {
+  const isOk = spectrum.status === 'ok';
+  const canRender = measured.length > 0 && ys.length > 0;
+
+  if (!canRender) {
+    if (!isOk || points.length === 0) {
+      return (
+        <div className="flex flex-col gap-1.5 rounded-lg border border-line bg-bar px-3 py-3">
+          <p className="m-0 text-[13px] font-medium text-mist">
+            Not enough data for a spectral energy distribution
+          </p>
+          <p className="m-0 text-[12px] leading-snug text-haze">
+            {spectrum.reason ?? 'The archive did not return usable SED points.'}
+          </p>
+          {spectrum.method?.note && (
+            <p className="m-0 text-[11px] leading-snug text-haze">{spectrum.method.note}</p>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col gap-1.5 rounded-lg border border-line bg-bar px-3 py-3">
         <p className="m-0 text-[13px] font-medium text-mist">Every band is masked</p>
@@ -102,9 +105,14 @@ export function SpectrumView({
   const plotWidth = width - pad.left - pad.right;
   const plotHeight = height - pad.top - pad.bottom;
 
-  const xMin = Math.min(...points.map((point) => point.wavelength_um));
-  const xMax = Math.max(...points.map((point) => point.wavelength_um));
-  const xSpan = Math.max(xMax - xMin, 1e-6);
+  let xMin = Math.min(...points.map((point) => point.wavelength_um));
+  let xMax = Math.max(...points.map((point) => point.wavelength_um));
+  if (xMax === xMin) {
+    const padX = Math.max(0.05, Math.abs(xMin) * 0.05);
+    xMin -= padX;
+    xMax += padX;
+  }
+  const xSpan = xMax - xMin;
 
   let yMin = Math.min(...ys);
   let yMax = Math.max(...ys);
@@ -159,11 +167,21 @@ export function SpectrumView({
 
   return (
     <div className="flex flex-col gap-2">
+      {!isOk && (
+        <div className="rounded-lg border border-line bg-bar px-3 py-2">
+          <p className="m-0 text-[12px] font-medium text-mist">
+            Not enough data for a spectral energy distribution
+          </p>
+          <p className="m-0 text-[11px] leading-snug text-haze">
+            {spectrum.reason ?? 'The archive did not return enough detected wavelength bins.'}
+          </p>
+        </div>
+      )}
       <svg
         viewBox={`0 0 ${width} ${height}`}
         className="h-auto w-full"
         role="img"
-        aria-label={`Quick-look spectral energy distribution: ${detected.length} detected bins, ${limitCount} upper limits${
+        aria-label={`${isOk ? 'Quick-look spectral energy distribution' : 'Partial wavelength measurements'}: ${detected.length} detected bins, ${limitCount} upper limits${
           noLimitCount > 0 ? `, ${noLimitCount} non-detections without a stored limit` : ''
         } and ${maskedCount} masked bins across ${points.length} wavelengths.`}
       >
@@ -405,7 +423,9 @@ export function SpectrumView({
       </div>
 
       <p className="m-0 max-w-[70ch] text-[11px] leading-snug text-haze">
-        Quick-look spectral energy distribution: single-frame aperture samples per wavelength,
+        {isOk
+          ? 'Quick-look spectral energy distribution: single-frame aperture samples per wavelength,'
+          : 'Partial wavelength measurements: single-frame aperture samples per wavelength,'}{' '}
         not band-averaged medians and not a calibrated spectrum.
         {spectrum.method?.note ? ` ${spectrum.method.note}` : ''}
       </p>
