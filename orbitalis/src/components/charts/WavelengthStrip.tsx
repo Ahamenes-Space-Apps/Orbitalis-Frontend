@@ -1,6 +1,8 @@
-import { useMemo, useRef, type KeyboardEvent } from 'react';
+import { useMemo, useRef } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import type { Frame, Spectrum } from '@/data/types';
 import { formatWavelength, formatWavelengthRange } from '@/lib/format';
+import { DURATION, EASE } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,10 +27,11 @@ interface WavelengthSlot {
 }
 
 /**
- * Thin spectrum-style strip over the real stored wavelengths. Each tick is one
- * distinct `wavelength_um` value (rounded like the coverage chart); the hue is a
- * positional rainbow for readability only — it is not a calibrated colour.
- * Drag or use the arrow keys to select a real wavelength interval.
+ * The real stored wavelengths as a thin spectrum-style strip, laid out like the
+ * old band filter. Each tick is one distinct `wavelength_um` value; the hue is a
+ * positional rainbow for readability only — it is not a calibrated colour and
+ * carries no band index. Drag across it to select a wavelength range, or focus
+ * it and use the arrow keys (Shift+arrows change the width, Escape clears).
  */
 export function WavelengthStrip({
   frames,
@@ -71,70 +74,45 @@ export function WavelengthStrip({
   }, [frames, spectrumWavelengths]);
 
   const activeRange = normalizeWavelengthRange(selection);
-  const interactive = Boolean(onSelectionChange) && slots.length > 1;
-
-  if (slots.length === 0) {
-    return (
-      <p className={className ?? 'm-0 text-[11px] text-haze'}>
-        Wavelength coverage appears once frames are stored.
-      </p>
-    );
-  }
-
-  const wavelengths = slots.map((slot) => slot.wavelength);
-  const min = wavelengths[0];
-  const max = wavelengths[wavelengths.length - 1];
-  const span = Math.max(max - min, 1e-6);
-  const slotCount = wavelengths.length;
-
-  const framesInRange = activeRange
-    ? frames.filter((frame) => inWavelengthRange(frame.wavelength_um, activeRange)).length
-    : frames.length;
-
-  const selectedIndices = activeRange
-    ? wavelengths
-        .map((wavelength, index) => (inWavelengthRange(wavelength, activeRange) ? index : -1))
-        .filter((index) => index >= 0)
-    : [];
-  const firstSelected = selectedIndices.length ? selectedIndices[0] : null;
-  const lastSelected = selectedIndices.length ? selectedIndices[selectedIndices.length - 1] : null;
+  const count = slots.length;
 
   const indexAt = (clientX: number) => {
     const rect = ref.current?.getBoundingClientRect();
-    if (!rect || rect.width === 0 || slotCount === 0) return 0;
-    const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-    return Math.min(slotCount - 1, Math.floor(ratio * slotCount));
+    if (!rect || rect.width === 0 || count === 0) return 0;
+    const f = (clientX - rect.left) / rect.width;
+    return Math.min(count - 1, Math.max(0, Math.floor(f * count)));
   };
 
   const rangeForIndices = (a: number, b: number): WavelengthRange => {
     const low = Math.min(a, b);
     const high = Math.max(a, b);
-    return [wavelengthKey(wavelengths[low]), wavelengthKey(wavelengths[high])];
+    return [wavelengthKey(slots[low].wavelength), wavelengthKey(slots[high].wavelength)];
   };
 
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (!onSelectionChange) return;
-    if (event.key === 'Escape') {
-      onSelectionChange(null);
-      return;
-    }
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-    event.preventDefault();
+  const selectedIndices = activeRange
+    ? slots
+        .map((slot, index) => (inWavelengthRange(slot.wavelength, activeRange) ? index : -1))
+        .filter((index) => index >= 0)
+    : [];
+  const firstSelected = selectedIndices.length ? selectedIndices[0] : null;
+  const lastSelected = selectedIndices.length ? selectedIndices[selectedIndices.length - 1] : null;
 
-    const direction = event.key === 'ArrowRight' ? 1 : -1;
-    const width =
-      firstSelected !== null && lastSelected !== null ? lastSelected - firstSelected : 0;
-    const latestStart = slotCount - 1 - width;
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (!onSelectionChange || count < 2) return;
+    if (e.key === 'Escape') return onSelectionChange(null);
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const d = e.key === 'ArrowRight' ? 1 : -1;
 
     if (firstSelected === null) {
-      const index = direction === 1 ? 0 : slotCount - 1;
+      const index = d === 1 ? 0 : count - 1;
       onSelectionChange(rangeForIndices(index, index));
       return;
     }
 
-    if (event.shiftKey) {
-      if (direction === 1) {
-        const nextEdge = Math.min(slotCount - 1, (lastSelected ?? firstSelected) + 1);
+    if (e.shiftKey) {
+      if (d === 1) {
+        const nextEdge = Math.min(count - 1, (lastSelected ?? firstSelected) + 1);
         onSelectionChange(rangeForIndices(firstSelected, nextEdge));
       } else {
         const nextEdge = Math.max(0, firstSelected - 1);
@@ -143,55 +121,63 @@ export function WavelengthStrip({
       return;
     }
 
-    const start = firstSelected;
-    const nextStart = Math.min(latestStart, Math.max(0, start + direction));
+    const width = lastSelected !== null ? lastSelected - firstSelected : 0;
+    const latestStart = count - 1 - width;
+    const nextStart = Math.min(latestStart, Math.max(0, firstSelected + d));
     onSelectionChange(rangeForIndices(nextStart, nextStart + width));
   };
 
+  if (count === 0) {
+    return (
+      <p className={className ?? 'm-0 text-[11px] text-haze'}>
+        Wavelength coverage appears once frames are stored.
+      </p>
+    );
+  }
+
+  const min = slots[0].wavelength;
+  const max = slots[count - 1].wavelength;
+  const framesInRange = activeRange
+    ? frames.filter((frame) => inWavelengthRange(frame.wavelength_um, activeRange)).length
+    : frames.length;
+
   const label = activeRange
-    ? `${formatWavelengthRange(activeRange)} · ${firstSelected !== null ? selectedIndices.length : 0} of ${slotCount} wavelengths · ${framesInRange} of ${frames.length} frames`
-    : `all ${slotCount} wavelengths · ${formatWavelengthRange([min, max])} · ${frames.length} frame${frames.length === 1 ? '' : 's'}`;
+    ? `${formatWavelengthRange(activeRange)} · ${selectedIndices.length} of ${count} wavelengths · ${framesInRange} of ${frames.length} frames`
+    : `all ${count} wavelengths · ${formatWavelengthRange([min, max])} · ${frames.length} frame${frames.length === 1 ? '' : 's'}`;
 
   return (
-    <div className={cn('flex min-w-0 flex-1 basis-70 flex-col gap-2.5', className)}>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+    <div className={cn('flex min-w-60 flex-1 basis-70 flex-col gap-2.5', className)}>
+      <div className="flex items-baseline justify-between gap-3">
         <div className="text-[11px] tracking-widest text-haze">WAVELENGTH FILTER</div>
         <div className="font-mono text-xs text-ink" data-testid="wavelength-strip-label">
           {label}
         </div>
       </div>
-
       <div
         ref={ref}
-        tabIndex={interactive ? 0 : undefined}
-        role={interactive ? 'group' : undefined}
-        aria-label={
-          interactive
-            ? 'Wavelength range selector over stored wavelengths. Drag to select, or use the arrow keys; Escape clears.'
-            : undefined
-        }
+        tabIndex={onSelectionChange && count > 1 ? 0 : undefined}
+        role={onSelectionChange && count > 1 ? 'group' : undefined}
+        aria-label="Wavelength range over stored wavelengths. Drag to select, or use the arrow keys."
         className={cn(
-          'flex h-[26px] gap-px rounded-sm transition-shadow duration-300',
-          interactive && 'cursor-ew-resize touch-none',
-          interactive &&
-            'outline-none focus-visible:ring-1 focus-visible:ring-violet/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bar',
+          'flex h-[26px] cursor-ew-resize touch-none gap-px rounded-sm transition-shadow duration-300',
           activeRange && 'ring-1 ring-violet/50 ring-offset-2 ring-offset-bar',
+          !(onSelectionChange && count > 1) && 'cursor-default',
         )}
-        onPointerDown={(event) => {
-          if (!interactive || event.button !== 0) return;
-          anchor.current = indexAt(event.clientX);
+        onPointerDown={(e) => {
+          if (!onSelectionChange || count < 2 || e.button !== 0) return;
+          anchor.current = indexAt(e.clientX);
           moved.current = false;
-          event.currentTarget.setPointerCapture?.(event.pointerId);
+          e.currentTarget.setPointerCapture?.(e.pointerId);
         }}
-        onPointerMove={(event) => {
-          if (!interactive || anchor.current === null) return;
-          const index = indexAt(event.clientX);
-          if (index !== anchor.current) moved.current = true;
-          if (moved.current) onSelectionChange?.(rangeForIndices(anchor.current, index));
+        onPointerMove={(e) => {
+          if (!onSelectionChange || count < 2 || anchor.current === null) return;
+          const i = indexAt(e.clientX);
+          if (i !== anchor.current) moved.current = true;
+          if (moved.current) onSelectionChange(rangeForIndices(anchor.current, i));
         }}
         onPointerUp={() => {
-          if (!interactive) return;
-          if (!moved.current) onSelectionChange?.(null);
+          if (!onSelectionChange || count < 2) return;
+          if (!moved.current) onSelectionChange(null);
           anchor.current = null;
         }}
         onPointerCancel={() => {
@@ -201,46 +187,43 @@ export function WavelengthStrip({
         onKeyDown={onKeyDown}
         data-testid="wavelength-strip"
       >
-        {slots.map((slot, index) => {
-          const t = (slot.wavelength - min) / span;
-          const hue = (250 - t * 230).toFixed(1);
-          const inRange =
-            !activeRange || inWavelengthRange(slot.wavelength, activeRange);
-          const isSelectedEdge =
-            index === firstSelected || index === lastSelected;
+        {slots.map((slot, i) => {
+          const inRange = !activeRange || inWavelengthRange(slot.wavelength, activeRange);
           return (
             <div
               key={slot.wavelength}
               aria-hidden="true"
-              title={`${formatWavelength(slot.wavelength)} · ${slot.frames} frame${
-                slot.frames === 1 ? '' : 's'
-              }${slot.detectors.length ? ` · detector ${slot.detectors.map((id) => `D${id}`).join(', ')}` : ''}`}
-              className={cn(
-                'min-w-0 flex-1 rounded-[1px] transition-[opacity,transform] duration-300',
-                interactive && 'hover:scale-y-125',
-                isSelectedEdge && 'scale-y-125',
-              )}
+              title={`${formatWavelength(slot.wavelength)} · ${slot.frames} frame${slot.frames === 1 ? '' : 's'}${slot.detectors.length ? ` · detector ${slot.detectors.map((id) => `D${id}`).join(', ')}` : ''}`}
+              className="min-w-0 flex-1 rounded-[1px] transition-[opacity,transform] duration-300 hover:scale-y-125"
               style={{
-                background: `hsl(${hue}, 72%, 62%)`,
+                background: `hsl(${(250 - i * 2.3).toFixed(0)}, 72%, 62%)`,
                 opacity: inRange ? 1 : 0.22,
               }}
             />
           );
         })}
       </div>
-
       <div className="flex items-center justify-between gap-2 text-xs text-haze">
         <span>Drag across the strip to isolate a wavelength range.</span>
-        {activeRange && onSelectionChange && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="min-h-8 px-2"
-            onClick={() => onSelectionChange(null)}
-          >
-            All wavelengths
-          </Button>
-        )}
+        <AnimatePresence initial={false}>
+          {activeRange && onSelectionChange && (
+            <motion.div
+              initial={{ opacity: 0, x: 6 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 6 }}
+              transition={{ duration: DURATION.fast, ease: EASE }}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                className="min-h-8 px-2"
+                onClick={() => onSelectionChange(null)}
+              >
+                All wavelengths
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
