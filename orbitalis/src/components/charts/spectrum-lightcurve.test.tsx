@@ -1,10 +1,67 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import uPlot from 'uplot';
 import { SpectrumView } from './SpectrumView';
 import { LightcurveChart } from './LightcurveChart';
 import { WavelengthCoverage } from './WavelengthCoverage';
 import type { Lightcurve, LightcurvePoint, Spectrum, SpectrumPoint } from '@/data/types';
+
+vi.mock('uplot', () => {
+  class FakeUPlot {
+    static instances: FakeUPlot[] = [];
+    opts: Record<string, any>;
+    data: unknown;
+    el: unknown;
+    bbox = { top: 0, left: 0, width: 640, height: 260 };
+    ctx = {
+      save: vi.fn(),
+      restore: vi.fn(),
+      fillRect: vi.fn(),
+      strokeRect: vi.fn(),
+      setLineDash: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      bezierCurveTo: vi.fn(),
+      quadraticCurveTo: vi.fn(),
+      closePath: vi.fn(),
+      rect: vi.fn(),
+      arc: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      clip: vi.fn(),
+      fillText: vi.fn(),
+      strokeText: vi.fn(),
+      measureText: vi.fn(() => ({ width: 0 })),
+    };
+    valToPos = (value: number) => value;
+    posToVal = (pos: number) => pos;
+    valToPosTime = false;
+    redraw = vi.fn();
+    destroy = vi.fn();
+    constructor(opts: Record<string, any>, data: unknown, el: unknown) {
+      this.opts = opts;
+      this.data = data;
+      this.el = el;
+      FakeUPlot.instances.push(this);
+    }
+    static paths = {
+      bars: () => () => null,
+      points: () => () => null,
+      linear: () => () => null,
+    };
+  }
+  return { default: FakeUPlot };
+});
+
+function lastPlot(): any {
+  return (uPlot as any).instances.at(-1);
+}
+
+beforeAll(() => {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as never);
+});
 
 const method = {
   kind: 'fixed' as const,
@@ -112,15 +169,24 @@ describe('SpectrumView', () => {
     expect(
       screen.getByText(/not band-averaged medians and not a calibrated spectrum/i),
     ).toBeInTheDocument();
+
+    const plot = lastPlot();
+    const series = plot.data as [number[], (number | null)[], (number | null)[]];
+    expect(series[0]).toEqual([0.75, 1.1, 1.6]);
+    expect(series[1]).toEqual([1e-8, null, 2e-8]);
+    expect(series[2]).toEqual([null, null, null]);
   });
 
-  it('dims SED bins outside the selected wavelength range', () => {
-    const { container } = render(
-      <SpectrumView spectrum={SED} wavelengthRange={[0.7, 1.2]} />,
-    );
+  it('shades the selected wavelength range like the band filter', () => {
+    render(<SpectrumView spectrum={SED} wavelengthRange={[0.7, 1.2]} />);
 
     expect(screen.getByText(/range 0\.70–1\.20 µm/i)).toBeInTheDocument();
-    expect(container.querySelectorAll('g[opacity="0.22"]')).toHaveLength(1);
+    const plot = lastPlot();
+    const drawClear = plot.opts.hooks.drawClear[0];
+    drawClear(plot);
+    expect(plot.ctx.fillRect).toHaveBeenCalled();
+    expect(plot.ctx.strokeRect).toHaveBeenCalled();
+    expect(plot.ctx.setLineDash).toHaveBeenCalled();
   });
 
   it('shows partial measurements when the SED is insufficient but bins exist', () => {
