@@ -12,16 +12,11 @@ export function AssistantLauncher() {
     <button
       type="button"
       onClick={() => setOpen(true)}
-      className="fixed right-6 bottom-6 z-30 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-amber/50 bg-panel px-4 py-2.5 text-sm font-semibold text-ink shadow-[0_8px_30px_rgba(0,0,0,0.45)] transition-colors hover:border-amber hover:bg-panel-2"
+      className="fixed right-4 bottom-4 z-30 inline-flex h-9 cursor-pointer items-center gap-2 border border-line-2 bg-panel px-3 text-[11px] font-medium text-ink transition-colors hover:border-accent hover:text-accent"
     >
-      <Sparkles className="size-4 text-amber" aria-hidden="true" />
+      <Sparkles className="size-3.5 text-accent" aria-hidden="true" />
       Ask the assistant
-      {hasMessages && (
-        <span
-          aria-hidden="true"
-          className="size-1.5 rounded-full bg-amber"
-        />
-      )}
+      {hasMessages && <span aria-hidden="true" className="size-1.5 bg-accent" />}
     </button>
   );
 }

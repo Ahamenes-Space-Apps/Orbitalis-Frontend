@@ -17,7 +17,7 @@ function MessageBody({
       {content.split('\n\n').map((paragraph, index) => (
         <p
           key={index}
-          className="m-0 text-[14px] leading-relaxed whitespace-pre-line text-[#d5dbe8]"
+          className="m-0 text-[11px] leading-relaxed whitespace-pre-line text-mist"
         >
           {paragraph.split(LINK_PATTERN).map((part, partIndex) => {
             if (!/^#\d{3}$/.test(part)) return <span key={partIndex}>{part}</span>;
@@ -27,7 +27,7 @@ function MessageBody({
                 key={partIndex}
                 type="button"
                 onClick={() => onCandidate(Number(part.slice(1)))}
-                className="cursor-pointer rounded-sm font-mono text-amber underline decoration-amber/40 underline-offset-2 transition-colors hover:text-amber-soft"
+                className="cursor-pointer font-mono text-accent underline decoration-accent/40 underline-offset-2 transition-colors hover:text-accent-soft"
               >
                 {part}
               </button>
@@ -47,7 +47,7 @@ function ToolCalls({ message }: { message: AssistantMessage }) {
       {message.toolCalls.map((call) => (
         <span
           key={call.name}
-          className="inline-flex items-center gap-1 rounded-full border border-line-2 bg-panel px-2 py-1 text-[11px] text-haze"
+          className="inline-flex items-center gap-1 border border-line bg-canvas px-1.5 py-0.5 text-[9px] text-haze"
         >
           <ScanSearch className="size-3" aria-hidden="true" />
           {call.label}
@@ -90,16 +90,15 @@ export function MessageList({
   if (messages.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-        <span className="grid size-12 place-items-center rounded-full border border-line-2 bg-panel text-amber">
-          <Sparkles className="size-6" aria-hidden="true" />
+        <span className="grid size-10 place-items-center border border-line-2 bg-canvas text-accent">
+          <Sparkles className="size-5" aria-hidden="true" />
         </span>
         <div>
-          <p className="m-0 text-[15px] font-semibold text-ink">
+          <p className="m-0 text-[12px] font-semibold text-ink">
             Ask about this field
           </p>
-          <p className="m-0 mt-1 text-[13px] leading-relaxed text-haze">
-            Answers use the current selection and this field&apos;s stored
-            results. Nothing is confirmed.
+          <p className="m-0 mt-1 text-[10px] leading-relaxed text-haze">
+            Answers use the current selection and this field&apos;s stored results. Nothing is confirmed.
           </p>
         </div>
       </div>
@@ -107,12 +106,12 @@ export function MessageList({
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
+    <div className="console-scroll flex flex-1 flex-col gap-3 overflow-y-auto px-3 py-3">
       {messages.map((message) => {
         if (message.role === 'user') {
           return (
             <div key={message.id} className="flex justify-end">
-              <div className="max-w-[85%] rounded-2xl rounded-br-md border border-amber/30 bg-amber/12 px-3.5 py-2.5 text-[14px] leading-relaxed text-ink">
+              <div className="max-w-[85%] border border-line-2 bg-canvas px-2.5 py-2 text-[11px] leading-relaxed text-ink">
                 {message.content}
               </div>
             </div>
@@ -125,18 +124,18 @@ export function MessageList({
           message.id === streamingId;
 
         return (
-          <div key={message.id} className="flex gap-2.5">
+          <div key={message.id} className="flex gap-2">
             <span
               aria-hidden="true"
-              className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border border-line-2 bg-panel text-amber"
+              className="mt-0.5 grid size-6 shrink-0 place-items-center border border-line-2 bg-canvas text-accent"
             >
-              <Sparkles className="size-3.5" />
+              <Sparkles className="size-3" />
             </span>
 
             <div
               className={cn(
-                'flex min-w-0 flex-1 flex-col gap-2 rounded-2xl rounded-tl-md border border-line bg-panel px-3.5 py-3',
-                message.status === 'error' && 'border-amber/50',
+                'flex min-w-0 flex-1 flex-col gap-2 border border-line bg-canvas px-2.5 py-2',
+                message.status === 'error' && 'border-signal/50',
               )}
             >
               <ToolCalls message={message} />
@@ -155,7 +154,7 @@ export function MessageList({
               )}
 
               {message.status === 'error' && (
-                <span className="text-[11px] text-amber" role="alert">
+                <span className="text-[10px] text-signal" role="alert">
                   The assistant is unavailable right now. The rest of the app
                   keeps working.
                 </span>

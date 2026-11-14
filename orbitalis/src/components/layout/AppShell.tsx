@@ -1,42 +1,49 @@
-import type { ReactNode } from 'react';
+import { useEffect } from 'react';
 import { NavLink, useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
+import { Moon, Sun } from 'lucide-react';
 import { pageTransition } from '@/lib/motion';
-import { formatDec, formatGalactic, formatRa } from '@/lib/coords';
-import { useField } from '@/data/hooks';
-import { usingMockApi } from '@/data/api';
 import { useUi } from '@/store/useUi';
-import { Button } from '@/components/ui/button';
 import { AssistantLauncher } from '@/components/assistant/AssistantLauncher';
 import { AssistantPanel } from '@/components/assistant/AssistantPanel';
 import { cn } from '@/lib/utils';
 
-const navClass = ({ isActive }: { isActive: boolean }) =>
-  cn(
-    'relative px-3.5 py-2.5 text-sm text-white no-underline transition-colors',
-    isActive ? 'text-ink font-semibold' : 'text-haze hover:text-ink',
-  );
+const NAV = [
+  { to: '/', label: 'Sky Explorer', end: true },
+  { to: '/spectral', label: 'Spectral Explorer', end: false },
+  { to: '/candidates', label: 'Candidate Dossier', end: false },
+  { to: '/architecture', label: 'Architecture', end: false },
+] as const;
 
-function NavItem({
+function WorkspaceTab({
   to,
+  label,
   end,
-  children,
 }: {
   to: string;
-  end?: boolean;
-  children: ReactNode;
+  label: string;
+  end: boolean;
 }) {
   return (
-    <NavLink to={to} end={end} className={navClass}>
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) =>
+        cn(
+          'relative flex h-[52px] shrink-0 items-center whitespace-nowrap px-3 text-[12px] font-medium tracking-[0.02em] transition-colors',
+          isActive ? 'text-ink' : 'text-haze hover:text-ink',
+        )
+      }
+    >
       {({ isActive }) => (
         <>
-          {children}
+          {label}
           {isActive && (
             <motion.span
+              layoutId="workspace-tab"
               aria-hidden="true"
-              layoutId="nav-underline"
-              className="absolute inset-x-2 -bottom-3 h-0.5 rounded-full bg-ink"
-              transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+              className="absolute inset-x-3 bottom-0 h-px bg-accent"
+              transition={{ type: 'spring', stiffness: 420, damping: 36 }}
             />
           )}
         </>
@@ -46,117 +53,54 @@ function NavItem({
 }
 
 export function AppShell() {
-  const { data: field } = useField();
-  const frame = useUi((s) => s.frame);
-  const setFrame = useUi((s) => s.setFrame);
+  const theme = useUi((s) => s.theme);
+  const setTheme = useUi((s) => s.setTheme);
+  const toggleTheme = useUi((s) => s.toggleTheme);
   const location = useLocation();
   const outlet = useOutlet();
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [theme]);
+
   return (
-    <div className="flex min-h-full flex-col bg-field text-ink">
-      <motion.header
-        initial={{ opacity: 0, y: -6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line bg-field px-6 py-3"
-      >
+    <div className="flex h-screen flex-col overflow-hidden bg-canvas text-ink">
+      <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-line bg-panel px-4">
         <NavLink
           to="/"
-          className="flex items-center gap-3 text-ink no-underline"
+          className="flex shrink-0 items-center text-[13px] font-semibold tracking-[0.28em] text-ink no-underline"
           aria-label="ORBITALIS home"
         >
-          <span
-            aria-hidden="true"
-            className="relative size-6 rounded-full border-[1.5px] border-white"
-          >
-            <span className="absolute -top-1 right-px size-[7px] rounded-full bg-amber" />
-          </span>
-
-          <span className="text-[15px] font-semibold tracking-[0.26em]">
-            ORBITALIS
-          </span>
+          ORBITALIS
         </NavLink>
 
-        <nav className="flex flex-wrap gap-1" aria-label="Main">
-          <NavItem to="/" end>
-            Explorer
-          </NavItem>
-
-          <NavItem to="/candidates">Candidates</NavItem>
-
-          <NavItem to="/methods">Methods and limits</NavItem>
+        <nav
+          className="console-scroll flex min-w-0 flex-1 items-center justify-center gap-1 overflow-x-auto px-2"
+          aria-label="Workspaces"
+        >
+          {NAV.map((item) => (
+            <WorkspaceTab key={item.to} {...item} />
+          ))}
         </nav>
 
-        <div className="min-w-0 flex-1" />
-
-        {field && (
-          <div
-            className="flex items-center gap-2  border border-line-2 bg-panel px-3 py-1.5 text-xs text-mist"
-            data-testid="field-badge"
-          >
-           
-
-            <span>
-              {field.synthetic
-                ? `${field.name} · ground truth known`
-                : field.name}
-            </span>
-
-            {usingMockApi && (
-              <span className="text-slate">· mock API</span>
-            )}
-          </div>
-        )}
-
-        {field && (
-          <div
-            className="font-mono text-xs text-mist"
-            data-testid="coord-readout"
-          >
-            {frame === 'equatorial'
-              ? `RA ${formatRa(field.center.ra)} · Dec ${formatDec(
-                  field.center.dec,
-                )}`
-              : formatGalactic(field.center)}
-          </div>
-        )}
-
-        <div
-          className="relative flex overflow-hidden rounded-[10px] border border-line-2 bg-panel"
-          role="group"
-          aria-label="Coordinate frame"
+        <button
+          type="button"
+          onClick={toggleTheme}
+          onDoubleClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          className="grid size-8 shrink-0 cursor-pointer place-items-center border border-line bg-panel-2 text-mist transition-colors hover:border-accent hover:text-ink"
         >
-          <motion.span
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 w-1/2 rounded-[8px] bg-[#1b2540]"
-            initial={false}
-            animate={{ x: frame === 'equatorial' ? 0 : '100%' }}
-            transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-          />
-          <Button
-            variant="segment"
-            className="relative z-10 data-[active=true]:bg-transparent"
-            data-active={frame === 'equatorial'}
-            aria-pressed={frame === 'equatorial'}
-            onClick={() => setFrame('equatorial')}
-          >
-            Equatorial
-          </Button>
+          {theme === 'dark' ? (
+            <Sun className="size-4" aria-hidden="true" />
+          ) : (
+            <Moon className="size-4" aria-hidden="true" />
+          )}
+        </button>
+      </header>
 
-          <Button
-            variant="segment"
-            className="relative z-10 data-[active=true]:bg-transparent"
-            data-active={frame === 'galactic'}
-            aria-pressed={frame === 'galactic'}
-            onClick={() => setFrame('galactic')}
-          >
-            Galactic
-          </Button>
-        </div>
-      </motion.header>
-
-      <div className="flex min-h-0 flex-1">
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-field">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={location.pathname}
@@ -164,16 +108,15 @@ export function AppShell() {
               initial="hidden"
               animate="visible"
               exit="exit"
-              className="flex min-h-0 flex-1 flex-col"
+              className="flex min-h-0 flex-1 flex-col overflow-hidden"
             >
               {outlet}
             </motion.div>
           </AnimatePresence>
         </main>
-
-        <AssistantPanel />
       </div>
 
+      <AssistantPanel />
       <AssistantLauncher />
     </div>
   );

@@ -5,7 +5,7 @@ import type { SkyPos } from '@/lib/coords';
  * Every type here is what a real backend must return as JSON (see README, "API contract").
  */
 
-export type EpochId = 1 | 2 | 3;
+export type EpochId = 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface Epoch {
   id: EpochId;

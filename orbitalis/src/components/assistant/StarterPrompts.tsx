@@ -13,19 +13,17 @@ export function StarterPrompts({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-2" aria-label="Starter questions">
-      <span className="text-[11px] tracking-widest text-haze uppercase">
-        Try asking
-      </span>
+    <div className="flex flex-col gap-1.5" aria-label="Starter questions">
+      <span className="text-[9px] tracking-[0.12em] text-haze uppercase">Try asking</span>
 
-      <div className="grid gap-2">
+      <div className="grid gap-1">
         {prompts.map((item) => (
           <button
             key={item.prompt}
             type="button"
             onClick={() => onPick(item.prompt)}
             disabled={disabled}
-            className="cursor-pointer rounded-xl border border-line-2 bg-panel px-3 py-2 text-left text-[13px] text-mist transition-colors hover:border-[#4a5b7f] hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+            className="cursor-pointer border border-line bg-canvas px-2 py-1.5 text-left text-[10px] text-mist transition-colors hover:border-accent hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
           >
             {item.label}
           </button>

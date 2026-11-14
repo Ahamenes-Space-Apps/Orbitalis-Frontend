@@ -19,7 +19,7 @@ function drawSource(source: any, ctx: CanvasRenderingContext2D) {
 
   ctx.save();
   if (d.kind === 'star') {
-    ctx.globalAlpha = 0.8;
+    ctx.globalAlpha = d.alpha ?? 0.8;
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.arc(x, y, 1.8, 0, 2 * Math.PI);
@@ -39,8 +39,6 @@ function drawSource(source: any, ctx: CanvasRenderingContext2D) {
       ctx.arc(x, y, r + 7, 0, 2 * Math.PI);
       ctx.fill();
       ctx.globalAlpha = 1;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 12;
     }
     ctx.strokeStyle = color;
     ctx.lineWidth = d.selected ? 2 : 1.5;
@@ -49,9 +47,8 @@ function drawSource(source: any, ctx: CanvasRenderingContext2D) {
     ctx.arc(x, y, r, 0, 2 * Math.PI);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.shadowBlur = 0;
     ctx.fillStyle = color;
-    ctx.font = '12px "IBM Plex Mono", monospace';
+    ctx.font = '11px "JetBrains Mono Variable", monospace';
     ctx.fillText(String(d.label ?? ''), x + r + 6, y + 4);
   }
   ctx.restore();

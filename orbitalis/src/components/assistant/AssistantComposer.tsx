@@ -41,11 +41,11 @@ export function AssistantComposer({
         onKeyDown={onKeyDown}
         rows={2}
         placeholder="Ask about this field or selection…"
-        className="w-full resize-none rounded-xl border border-line-2 bg-panel px-3 py-2.5 text-sm text-ink outline-none transition-colors placeholder:text-haze focus-visible:border-cyan"
+        className="w-full resize-none border border-line bg-canvas px-2 py-1.5 text-[11px] text-ink outline-none transition-colors placeholder:text-haze focus-visible:border-accent"
       />
 
       <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1 text-[11px] text-haze">
+        <span className="flex items-center gap-1 text-[9px] text-haze">
           <CornerDownLeft className="size-3" aria-hidden="true" />
           Enter to send · Shift + Enter for a new line
         </span>

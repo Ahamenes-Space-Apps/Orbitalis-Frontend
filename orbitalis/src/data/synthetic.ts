@@ -1,4 +1,5 @@
 import { offsetToSky } from '@/lib/coords';
+import { resampleOffsets } from '@/lib/epochs';
 import {
   BAND_COUNT,
   type CandidateDetail,
@@ -72,6 +73,9 @@ export function generateSyntheticField(seed = SEED): SyntheticField {
       { id: 1, label: 'Epoch 1', offsetLabel: 'T + 0', daysSinceFirst: 0 },
       { id: 2, label: 'Epoch 2', offsetLabel: 'T + 6 mo', daysSinceFirst: 182 },
       { id: 3, label: 'Epoch 3', offsetLabel: 'T + 12 mo', daysSinceFirst: 365 },
+      { id: 4, label: 'Epoch 4', offsetLabel: 'T + 18 mo', daysSinceFirst: 547 },
+      { id: 5, label: 'Epoch 5', offsetLabel: 'T + 24 mo', daysSinceFirst: 730 },
+      { id: 6, label: 'Epoch 6', offsetLabel: 'T + 30 mo', daysSinceFirst: 912 },
     ],
     counts: { stationary: 500, variable: 20, moving: 10, highInterest: 1 },
   };
@@ -126,7 +130,8 @@ export function generateSyntheticField(seed = SEED): SyntheticField {
     known: boolean;
     truth: CandidateDetail['truth'];
   }) => {
-    const e3 = opts.offsets[opts.offsets.length - 1];
+    const offsets = resampleOffsets(opts.offsets, field.epochs.length);
+    const e3 = offsets[offsets.length - 1];
     const disp = Math.hypot(e3.dx, e3.dy);
     const sig = disp / (opts.sigma * Math.SQRT2);
     const M = opts.components.M ?? clamp01(1 - Math.exp(-sig / 3.5));
@@ -138,15 +143,15 @@ export function generateSyntheticField(seed = SEED): SyntheticField {
         }
       : null;
     const { spectrum, median } = makeSpectrum(opts.components.S, opts.flagged, opts.amp, opts.cls === 'moving' ? range(-0.2, 0.4) : 0);
-    const positions = opts.offsets.map((o) => offsetToSky(CENTER, opts.start.dx + o.dx, opts.start.dy + o.dy));
+    const positions = offsets.map((o) => offsetToSky(CENTER, opts.start.dx + o.dx, opts.start.dy + o.dy));
 
-    const mid = { dx: (opts.offsets[0].dx + e3.dx) / 2, dy: (opts.offsets[0].dy + e3.dy) / 2 };
-    const half = Math.max(30, Math.ceil((Math.max(...opts.offsets.map((o) => Math.hypot(o.dx - mid.dx, o.dy - mid.dy))) * 2.4) / 10) * 10);
+    const mid = { dx: (offsets[0].dx + e3.dx) / 2, dy: (offsets[0].dy + e3.dy) / 2 };
+    const half = Math.max(60, Math.ceil((Math.max(...offsets.map((o) => Math.hypot(o.dx - mid.dx, o.dy - mid.dy))) * 2.4) / 10) * 10);
     const stars: { dx: number; dy: number; mag: number }[] = [];
     while (stars.length < 26) {
       const dx = range(-half, half);
       const dy = range(-half, half);
-      const near = opts.offsets.some((o) => Math.hypot(dx - (o.dx - mid.dx), dy - (o.dy - mid.dy)) < half * 0.18);
+      const near = offsets.some((o) => Math.hypot(dx - (o.dx - mid.dx), dy - (o.dy - mid.dy)) < half * 0.18);
       if (near) continue;
       stars.push({ dx: round(dx, 1), dy: round(dy, 1), mag: round(rnd(), 2) });
     }
@@ -163,13 +168,13 @@ export function generateSyntheticField(seed = SEED): SyntheticField {
       knownMatch: known,
       flaggedBands: opts.flagged,
       peakDepartureSigma: opts.peak,
-      detections: 3,
+      detections: field.epochs.length,
       positionSigmaArcsec: opts.sigma,
-      rateArcsecPerYear: round((disp * 365.25) / 365, 1),
+      rateArcsecPerYear: round((disp * 365.25) / Math.max(1, field.epochs[field.epochs.length - 1].daysSinceFirst), 1),
       truth: opts.truth,
       spectrum,
       medianSpectrum: median,
-      offsetsArcsec: opts.offsets.map((o) => ({ dx: round(o.dx, 2), dy: round(o.dy, 2) })),
+      offsetsArcsec: offsets.map((o) => ({ dx: round(o.dx, 2), dy: round(o.dy, 2) })),
       cutout: { halfWidthArcsec: half, stars },
       crossMatches: crossMatches(known),
     });

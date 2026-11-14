@@ -5,7 +5,7 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
   return (
     <div
       className={cn(
-        'flex min-w-0 flex-col gap-4 rounded-2xl border border-line bg-panel p-5 transition-[border-color,background-color] duration-200 hover:border-line-2 sm:p-[22px]',
+        'flex min-w-0 flex-col gap-3 rounded-sm border border-line bg-panel p-4',
         className,
       )}
       {...props}
@@ -14,9 +14,9 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
 }
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn('m-0 text-lg font-semibold', className)} {...props} />;
+  return <h2 className={cn('m-0 text-[13px] font-semibold tracking-[0.01em] text-ink', className)} {...props} />;
 }
 
 export function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn('m-0 mt-1 text-[13px] text-haze', className)} {...props} />;
+  return <p className={cn('m-0 mt-1 text-[11px] leading-relaxed text-haze', className)} {...props} />;
 }
