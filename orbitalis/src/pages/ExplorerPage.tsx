@@ -25,7 +25,7 @@ import { Skeleton } from '@/components/common/Primitives';
 import { StatusChip } from '@/components/common/StatusChip';
 import { LightcurveChart } from '@/components/charts/LightcurveChart';
 import { SpectrumView } from '@/components/charts/SpectrumView';
-import { WavelengthCoverage } from '@/components/charts/WavelengthCoverage';
+import { WavelengthStrip } from '@/components/charts/WavelengthStrip';
 import { CandidateDrawer } from '@/components/explorer/CandidateDrawer';
 import { CandidateQueue } from '@/components/explorer/CandidateQueue';
 import { FieldEntry } from '@/components/explorer/FieldEntry';
@@ -373,10 +373,8 @@ function ExplorerWorkspace({ fieldId }: { fieldId: string }) {
 
         {frames.length > 0 && (
           <div className="shrink-0 border-b border-line bg-bar px-3 py-2">
-            <WavelengthCoverage
-              compact
+            <WavelengthStrip
               frames={frames}
-              selectedWavelength={selectedFrame?.wavelength_um ?? null}
               selection={wavelengthRange}
               onSelectionChange={setWavelengthRange}
             />

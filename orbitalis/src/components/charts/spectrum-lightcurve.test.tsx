@@ -266,23 +266,6 @@ describe('WavelengthCoverage', () => {
     expect(container.querySelector('svg')?.innerHTML).not.toContain('#55d6e8');
   });
 
-  it('renders a compact strip for the explorer bar', () => {
-    const { container } = render(
-      <WavelengthCoverage
-        compact
-        frames={[
-          { wavelength_um: 0.75, detector: 1 },
-          { wavelength_um: 1.1, detector: 1 },
-          { wavelength_um: 1.6, detector: 1 },
-        ]}
-        onSelectionChange={vi.fn()}
-      />,
-    );
-
-    expect(container.querySelector('svg')).toHaveAttribute('viewBox', '0 0 640 72');
-    expect(screen.getByTestId('wavelength-coverage-plot')).toBeInTheDocument();
-  });
-
   it('selects and clears a wavelength interval from the keyboard', async () => {
     const user = userEvent.setup();
     const onSelectionChange = vi.fn();
