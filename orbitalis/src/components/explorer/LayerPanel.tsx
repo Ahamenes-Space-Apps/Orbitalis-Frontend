@@ -6,6 +6,7 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { formatArcsec } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import type { WavelengthRange } from '@/lib/wavelength';
 
 interface LayerPanelProps {
   field: Field;
@@ -18,6 +19,8 @@ interface LayerPanelProps {
   view: ViewMode;
   showFlags: boolean;
   selectedWavelength?: number | null;
+  wavelengthRange?: WavelengthRange | null;
+  onWavelengthRange?: (range: WavelengthRange | null) => void;
   onToggleLayer: (layer: LayerName) => void;
   onExaggeration: (value: number) => void;
   onView: (view: ViewMode) => void;
@@ -42,6 +45,8 @@ export function LayerPanel({
   view,
   showFlags,
   selectedWavelength = null,
+  wavelengthRange = null,
+  onWavelengthRange,
   onToggleLayer,
   onExaggeration,
   onView,
@@ -153,9 +158,14 @@ export function LayerPanel({
           </h2>
           <span className="font-mono text-[10px] text-haze">infrared</span>
         </div>
-        <WavelengthCoverage frames={frames} selectedWavelength={selectedWavelength} />
+        <WavelengthCoverage
+          frames={frames}
+          selectedWavelength={selectedWavelength}
+          selection={wavelengthRange}
+          onSelectionChange={onWavelengthRange}
+        />
         <p className="m-0 leading-snug text-haze">
-          Stored frame wavelengths only. This is read-only; it does not select a calibrated band.
+          Stored frame wavelengths only. The range is a view filter, not a calibrated band.
         </p>
       </section>
 

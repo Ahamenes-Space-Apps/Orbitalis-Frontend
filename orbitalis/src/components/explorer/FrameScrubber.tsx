@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import type { Frame } from '@/data/types';
-import { formatMjdDate, formatMjdDay, formatWavelength } from '@/lib/format';
+import { formatMjdDate, formatMjdDay, formatWavelength, formatWavelengthRange } from '@/lib/format';
+import { inWavelengthRange, normalizeWavelengthRange, type WavelengthRange } from '@/lib/wavelength';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +12,7 @@ interface FrameScrubberProps {
   order: 'time' | 'wavelength';
   playing: boolean;
   speed: number;
+  wavelengthRange?: WavelengthRange | null;
   onOrder: (order: 'time' | 'wavelength') => void;
   onSelect: (frameRef: string) => void;
   onPlaying: (playing: boolean) => void;
@@ -23,6 +25,7 @@ export function FrameScrubber({
   order,
   playing,
   speed,
+  wavelengthRange: wavelengthRangeProp = null,
   onOrder,
   onSelect,
   onPlaying,
@@ -31,6 +34,9 @@ export function FrameScrubber({
   const ordered = [...frames].sort((a, b) =>
     order === 'time' ? a.mjd - b.mjd : a.wavelength_um - b.wavelength_um,
   );
+  const wavelengthRange = normalizeWavelengthRange(wavelengthRangeProp);
+  const inSelectedRange = (frame: Frame) =>
+    !wavelengthRange || inWavelengthRange(frame.wavelength_um, wavelengthRange);
   const index = ordered.findIndex((frame) => frame.frame_ref === selectedRef);
   const selected = index >= 0 ? ordered[index] : ordered[0] ?? null;
 
@@ -63,6 +69,7 @@ export function FrameScrubber({
   const mjdMax = Math.max(...frames.map((frame) => frame.mjd));
   const waveMin = Math.min(...frames.map((frame) => frame.wavelength_um));
   const waveMax = Math.max(...frames.map((frame) => frame.wavelength_um));
+  const inRangeCount = ordered.filter(inSelectedRange).length;
 
   return (
     <section className="flex flex-col gap-2 border-t border-line bg-bar px-4 py-2.5" aria-label="Frame scrubber">
@@ -131,6 +138,7 @@ export function FrameScrubber({
           <div className="absolute inset-0 flex items-center justify-between">
             {ordered.map((frame, tickIndex) => {
               const active = frame.frame_ref === selected?.frame_ref;
+              const dimmed = wavelengthRange !== null && !inSelectedRange(frame);
               return (
                 <button
                   key={frame.frame_ref}
@@ -138,13 +146,14 @@ export function FrameScrubber({
                   onClick={() => onSelect(frame.frame_ref)}
                   aria-label={`Show frame ${tickIndex + 1} of ${ordered.length}, ${formatWavelength(
                     frame.wavelength_um,
-                  )}, ${formatMjdDate(frame.mjd)}`}
+                  )}, ${formatMjdDate(frame.mjd)}${dimmed ? ', outside selected wavelength range' : ''}`}
                   aria-pressed={active}
                   className={cn(
                     'z-10 h-3 w-1 cursor-pointer rounded-full border transition-all',
                     active
                       ? 'h-4 w-1.5 border-amber bg-amber'
                       : 'border-line-2 bg-bar hover:border-amber/70 hover:bg-amber/40',
+                    dimmed && 'opacity-35',
                   )}
                   style={{ flexGrow: 0 }}
                 />
@@ -154,7 +163,11 @@ export function FrameScrubber({
         </div>
         <div className="flex justify-between font-mono text-[10px] text-haze">
           <span>{order === 'time' ? formatMjdDate(mjdMin) : formatWavelength(waveMin)}</span>
-          <span>{ordered.length} frames</span>
+          <span>
+            {wavelengthRange
+              ? `${inRangeCount} of ${ordered.length} frames in ${formatWavelengthRange(wavelengthRange)}`
+              : `${ordered.length} frames`}
+          </span>
           <span>{order === 'time' ? formatMjdDate(mjdMax) : formatWavelength(waveMax)}</span>
         </div>
       </div>

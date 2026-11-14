@@ -17,6 +17,7 @@ import {
 import type { Field, Overlay } from '@/data/types';
 import { formatDec, formatRa, formatRelease } from '@/lib/format';
 import type { SkyPos } from '@/lib/coords';
+import type { WavelengthRange } from '@/lib/wavelength';
 import { useSearchPreservingPath, useUrlState, type LayerName } from '@/state/urlState';
 import { useUi } from '@/store/useUi';
 import { ErrorNote } from '@/components/common/ErrorNote';
@@ -148,10 +149,12 @@ function FieldBuildHeader({
 function SkyPointPanel({
   fieldId,
   point,
+  wavelengthRange = null,
   onClose,
 }: {
   fieldId: string;
   point: SkyPos;
+  wavelengthRange?: WavelengthRange | null;
   onClose: () => void;
 }) {
   const lightcurve = useFieldLightcurve(fieldId, point.ra, point.dec);
@@ -197,7 +200,9 @@ function SkyPointPanel({
             No light curve could be measured at this position.
           </p>
         )}
-        {lightcurve.data && <LightcurveChart lightcurve={lightcurve.data.data} compact />}
+        {lightcurve.data && (
+          <LightcurveChart lightcurve={lightcurve.data.data} compact wavelengthRange={wavelengthRange} />
+        )}
       </div>
 
       <div className="mt-3 border-t border-line pt-2">
@@ -205,7 +210,7 @@ function SkyPointPanel({
           Spectrum
         </h3>
         {spectrum.data ? (
-          <SpectrumView spectrum={spectrum.data.data} />
+          <SpectrumView spectrum={spectrum.data.data} wavelengthRange={wavelengthRange} />
         ) : (
           <p className="m-0 text-[11px] text-haze">Checking the spectrum…</p>
         )}
@@ -224,6 +229,7 @@ function ExplorerWorkspace({ fieldId }: { fieldId: string }) {
   const [frameOrder, setFrameOrder] = useState<'time' | 'wavelength'>('time');
   const [layersOpen, setLayersOpen] = useState(true);
   const [skyPoint, setSkyPoint] = useState<SkyPos | null>(null);
+  const [wavelengthRange, setWavelengthRange] = useState<WavelengthRange | null>(null);
   const queryClient = useQueryClient();
 
   const field = fieldQuery.data?.data;
@@ -265,6 +271,9 @@ function ExplorerWorkspace({ fieldId }: { fieldId: string }) {
   useEffect(() => {
     setDrawerClosed(false);
   }, [selectedId]);
+  useEffect(() => {
+    setWavelengthRange(null);
+  }, [fieldId]);
   const hoveredId = useUi((state) => state.hoveredCandidateId);
   const setHovered = useUi((state) => state.setHoveredCandidateId);
   const playing = useUi((state) => state.playing);
@@ -395,12 +404,19 @@ function ExplorerWorkspace({ fieldId }: { fieldId: string }) {
               onSkyClick={(position) => setSkyPoint(position)}
             />
             {skyPoint && (
-              <SkyPointPanel fieldId={fieldId} point={skyPoint} onClose={() => setSkyPoint(null)} />
+              <SkyPointPanel
+                fieldId={fieldId}
+                point={skyPoint}
+                wavelengthRange={wavelengthRange}
+                onClose={() => setSkyPoint(null)}
+              />
             )}
             {selectedId && !drawerClosed && (
               <CandidateDrawer
                 candidateId={selectedId}
                 field={field}
+                wavelengthRange={wavelengthRange}
+                onWavelengthRange={setWavelengthRange}
                 onClose={() => setDrawerClosed(true)}
                 onSelectOnMap={() => {
                   setSkyPoint(null);
@@ -423,6 +439,8 @@ function ExplorerWorkspace({ fieldId }: { fieldId: string }) {
                 view={values.view}
                 showFlags={showFlags}
                 selectedWavelength={selectedFrame?.wavelength_um ?? null}
+                wavelengthRange={wavelengthRange}
+                onWavelengthRange={setWavelengthRange}
                 onToggleLayer={toggleLayer}
                 onExaggeration={(value) => update({ exag: value })}
                 onView={(view) => update({ view })}
@@ -438,6 +456,7 @@ function ExplorerWorkspace({ fieldId }: { fieldId: string }) {
           order={frameOrder}
           playing={playing}
           speed={speed}
+          wavelengthRange={wavelengthRange}
           onOrder={setFrameOrder}
           onSelect={(frameRef) => update({ t: frameRef })}
           onPlaying={setPlaying}

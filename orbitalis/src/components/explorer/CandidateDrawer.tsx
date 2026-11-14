@@ -22,6 +22,7 @@ import {
   formatSnr,
   formatWavelength,
 } from '@/lib/format';
+import { inWavelengthRange, type WavelengthRange } from '@/lib/wavelength';
 import { ErrorNote } from '@/components/common/ErrorNote';
 import { Skeleton } from '@/components/common/Primitives';
 import { LightcurveChart } from '@/components/charts/LightcurveChart';
@@ -103,6 +104,8 @@ export interface CandidateDrawerProps {
   candidateId: string;
   field: Field;
   variant?: 'drawer' | 'pane';
+  wavelengthRange?: WavelengthRange | null;
+  onWavelengthRange?: (range: WavelengthRange | null) => void;
   onClose?: () => void;
   onSelectOnMap?: () => void;
   /** The dossier page supplies its own header and export controls. */
@@ -119,6 +122,8 @@ export function CandidateDrawer({
   candidateId,
   field,
   variant = 'drawer',
+  wavelengthRange: wavelengthRangeProp,
+  onWavelengthRange,
   onClose,
   onSelectOnMap,
   hideHeader = false,
@@ -133,6 +138,9 @@ export function CandidateDrawer({
   const [frameIndex, setFrameIndex] = useState(0);
   const [blinking, setBlinking] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [localWavelengthRange, setLocalWavelengthRange] = useState<WavelengthRange | null>(null);
+  const wavelengthRange = onWavelengthRange ? (wavelengthRangeProp ?? null) : localWavelengthRange;
+  const setWavelengthRange = onWavelengthRange ?? setLocalWavelengthRange;
 
   const candidate = detail.data?.data;
   const frames = useMemo(
@@ -143,6 +151,7 @@ export function CandidateDrawer({
   useEffect(() => {
     setFrameIndex(0);
     setBlinking(false);
+    setLocalWavelengthRange(null);
   }, [candidateId]);
 
   useEffect(() => {
@@ -351,35 +360,43 @@ export function CandidateDrawer({
                   </div>
 
                   <div className="flex gap-1.5 overflow-x-auto pb-1" aria-label="Frame filmstrip">
-                    {frames.map((frame, index) => (
-                      <button
-                        key={frame.frame_ref}
-                        type="button"
-                        onClick={() => {
-                          setBlinking(false);
-                          setFrameIndex(index);
-                        }}
-                        aria-pressed={index === frameIndex}
-                        aria-label={`Show original frame ${index + 1} of ${frames.length}`}
-                        className={cn(
-                          'relative size-12 shrink-0 cursor-pointer overflow-hidden rounded border bg-panel',
-                          index === frameIndex ? 'border-amber' : 'border-line hover:border-line-2',
-                        )}
-                      >
-                        <img
-                          src={api.candidateCutout(field.field_id, candidateId, frame.frame_ref)}
-                          alt=""
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                          onError={(event) => {
-                            (event.currentTarget as HTMLImageElement).style.opacity = '0';
+                    {frames.map((frame, index) => {
+                      const dimmed =
+                        wavelengthRange !== null &&
+                        !inWavelengthRange(frame.wavelength_um, wavelengthRange);
+                      return (
+                        <button
+                          key={frame.frame_ref}
+                          type="button"
+                          onClick={() => {
+                            setBlinking(false);
+                            setFrameIndex(index);
                           }}
-                        />
-                        <span className="absolute inset-x-0 bottom-0 bg-bar/85 text-center font-mono text-[8px] text-haze">
-                          {index + 1}
-                        </span>
-                      </button>
-                    ))}
+                          aria-pressed={index === frameIndex}
+                          aria-label={`Show original frame ${index + 1} of ${frames.length}${
+                            dimmed ? ', outside selected wavelength range' : ''
+                          }`}
+                          className={cn(
+                            'relative size-12 shrink-0 cursor-pointer overflow-hidden rounded border bg-panel',
+                            index === frameIndex ? 'border-amber' : 'border-line hover:border-line-2',
+                            dimmed && 'opacity-40',
+                          )}
+                        >
+                          <img
+                            src={api.candidateCutout(field.field_id, candidateId, frame.frame_ref)}
+                            alt=""
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                            onError={(event) => {
+                              (event.currentTarget as HTMLImageElement).style.opacity = '0';
+                            }}
+                          />
+                          <span className="absolute inset-x-0 bottom-0 bg-bar/85 text-center font-mono text-[8px] text-haze">
+                            {index + 1}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -467,7 +484,9 @@ export function CandidateDrawer({
                   No light curve is available for this candidate.
                 </p>
               )}
-              {lightcurve.data && <LightcurveChart lightcurve={lightcurve.data.data} compact />}
+              {lightcurve.data && (
+                <LightcurveChart lightcurve={lightcurve.data.data} compact wavelengthRange={wavelengthRange} />
+              )}
             </section>
 
             <section className="flex flex-col gap-2 border-t border-line pt-4" aria-labelledby="spectrum-heading">
@@ -483,7 +502,7 @@ export function CandidateDrawer({
                   No spectral energy distribution is available for this candidate.
                 </p>
               )}
-              {spectrum.data && <SpectrumView spectrum={spectrum.data.data} />}
+              {spectrum.data && <SpectrumView spectrum={spectrum.data.data} wavelengthRange={wavelengthRange} />}
               <div className="mt-1 border-t border-line pt-2">
                 <h4 className="m-0 mb-1 text-[11px] font-semibold tracking-[0.12em] text-haze uppercase">
                   Wavelength coverage
@@ -492,6 +511,8 @@ export function CandidateDrawer({
                   frames={frames}
                   spectrum={spectrum.data?.data}
                   selectedWavelength={current?.wavelength_um ?? null}
+                  selection={wavelengthRange}
+                  onSelectionChange={setWavelengthRange}
                 />
               </div>
             </section>

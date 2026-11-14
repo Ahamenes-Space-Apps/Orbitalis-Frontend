@@ -52,7 +52,7 @@ export const ERROR_COPY: Record<string, { title: string; body: string; recovery?
   'ORB-AS-003': { title: 'The daily assistant limit is used up.', body: 'The limit resets tomorrow.' },
   'ORB-AS-004': { title: 'The assistant is unavailable right now.', body: 'The rest of the app keeps working.' },
   'ORB-SYS-001': { title: 'Something went wrong on our side.', body: 'The request id below can help with a report.', recovery: 'Retry.' },
-  'ORB-SYS-002': { title: "ORBITALIS can't load its demo data.", body: 'The demo bundle is unavailable.', recovery: 'Try again.' },
+  'ORB-SYS-002': { title: "ORBITALIS can't load its data.", body: 'The data bundle is unavailable.', recovery: 'Try again.' },
 };
 
 export function errorCopy(error: unknown): { title: string; body: string; recovery?: string; code: string } {

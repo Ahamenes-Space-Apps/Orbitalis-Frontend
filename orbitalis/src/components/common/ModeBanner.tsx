@@ -17,7 +17,7 @@ export function ModeBanner({ className }: { className?: string }) {
   const message = usingMockApi
     ? 'Mock API · Demo data. Loaded instantly from the checked-in bundle; nothing is live.'
     : status === 'offline'
-      ? 'Archive unavailable. Showing demo data.'
+      ? 'Archive unavailable. Cached results may still be shown; new requests will retry.'
       : status === 'degraded'
         ? 'Some observations could not be downloaded. Results use the rest.'
         : null;

@@ -20,6 +20,13 @@ export function formatWavelength(um: number | null | undefined): string {
   return `${um.toFixed(2)} µm`;
 }
 
+/** 0.75–1.10 µm */
+export function formatWavelengthRange(range: readonly [number, number]): string {
+  const low = Math.min(range[0], range[1]);
+  const high = Math.max(range[0], range[1]);
+  return `${low.toFixed(2)}–${high.toFixed(2)} µm`;
+}
+
 /** 12.4″/day */
 export function formatRate(arcsecPerDay: number | null | undefined): string {
   if (arcsecPerDay === null || arcsecPerDay === undefined || !Number.isFinite(arcsecPerDay)) {

@@ -114,7 +114,11 @@ export function FieldEntry({ variant = 'landing' }: { variant?: 'landing' | 'dia
           <h2 id="preset-heading" className="m-0 text-base font-semibold">
             Presets
           </h2>
-          <span className="text-[11px] text-haze">Demo data loads instantly, with stored results.</span>
+          <span className="text-[11px] text-haze">
+            {usingMockApi
+              ? 'Demo data loads instantly, with stored results.'
+              : 'Open a preset to load its field and observations.'}
+          </span>
         </div>
         {presets.isLoading && <p className="m-0 text-sm text-haze">Loading presets…</p>}
         {presets.isError && <ErrorNote error={presets.error} onRetry={() => presets.refetch()} />}

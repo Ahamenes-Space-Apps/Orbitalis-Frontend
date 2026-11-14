@@ -6,7 +6,9 @@ import {
   formatPercent,
   formatSnr,
   formatWavelength,
+  formatWavelengthRange,
 } from '@/lib/format';
+import { inWavelengthRange, normalizeWavelengthRange, type WavelengthRange } from '@/lib/wavelength';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +40,7 @@ interface LightcurveChartProps {
   lightcurve: Lightcurve;
   className?: string;
   compact?: boolean;
+  wavelengthRange?: WavelengthRange | null;
 }
 
 /**
@@ -46,8 +49,14 @@ interface LightcurveChartProps {
  * Bins with null flux (masked or low aperture coverage) are gaps: they are
  * never drawn as zero and no line crosses them.
  */
-export function LightcurveChart({ lightcurve, className, compact = false }: LightcurveChartProps) {
+export function LightcurveChart({
+  lightcurve,
+  className,
+  compact = false,
+  wavelengthRange: wavelengthRangeProp = null,
+}: LightcurveChartProps) {
   const [showTable, setShowTable] = useState(false);
+  const wavelengthRange = normalizeWavelengthRange(wavelengthRangeProp);
 
   const points = useMemo(
     () => [...lightcurve.points].sort((a, b) => a.mjd - b.mjd),
@@ -60,6 +69,10 @@ export function LightcurveChart({ lightcurve, className, compact = false }: Ligh
   );
   const colorFor = (point: LightcurvePoint) =>
     COLORS[Math.max(0, wavelengths.indexOf(wavelengthGroup(point))) % COLORS.length];
+  const inSelectedRange = (point: LightcurvePoint) =>
+    !wavelengthRange || inWavelengthRange(point.wavelength_um, wavelengthRange);
+  const wavelengthGroupInRange = (group: string) =>
+    !wavelengthRange || inWavelengthRange(Number(group), wavelengthRange);
 
   const width = compact ? 420 : 640;
   const height = compact ? 170 : 230;
@@ -222,7 +235,7 @@ export function LightcurveChart({ lightcurve, className, compact = false }: Ligh
                 .join(' ')}
               fill="none"
               stroke={colorFor(segment[0])}
-              strokeOpacity="0.45"
+              strokeOpacity={inSelectedRange(segment[0]) ? 0.45 : 0.1}
               strokeWidth="1.2"
             />
           ));
@@ -231,9 +244,10 @@ export function LightcurveChart({ lightcurve, className, compact = false }: Ligh
         {points.map((point) => {
           const x = geometry.xScale(point.mjd);
           const color = colorFor(point);
+          const dimmed = !inSelectedRange(point);
           if (isMasked(point)) {
             return (
-              <g key={point.frame_ref}>
+              <g key={point.frame_ref} opacity={dimmed ? 0.22 : 1}>
                 <line
                   x1={x}
                   x2={x}
@@ -266,7 +280,7 @@ export function LightcurveChart({ lightcurve, className, compact = false }: Ligh
           if (!point.detected) {
             if (point.upper_limit_mjy === null) {
               return (
-                <g key={point.frame_ref}>
+                <g key={point.frame_ref} opacity={dimmed ? 0.22 : 1}>
                   <line
                     x1={x}
                     x2={x}
@@ -300,7 +314,7 @@ export function LightcurveChart({ lightcurve, className, compact = false }: Ligh
             }
             const y = geometry.yScale(point.upper_limit_mjy);
             return (
-              <g key={point.frame_ref}>
+              <g key={point.frame_ref} opacity={dimmed ? 0.22 : 1}>
                 <path
                   d={`M${x - 3.5},${y + 4} L${x},${y - 3} L${x + 3.5},${y + 4} Z`}
                   fill="none"
@@ -324,7 +338,7 @@ export function LightcurveChart({ lightcurve, className, compact = false }: Ligh
           const yHigh = geometry.yScale(flux + err);
           const yLow = geometry.yScale(flux - err);
           return (
-            <g key={point.frame_ref}>
+            <g key={point.frame_ref} opacity={dimmed ? 0.22 : 1}>
               <line x1={x} x2={x} y1={yHigh} y2={yLow} stroke={color} strokeWidth="1.1" />
               <line x1={x - 2.5} x2={x + 2.5} y1={yHigh} y2={yHigh} stroke={color} strokeWidth="1.1" />
               <line x1={x - 2.5} x2={x + 2.5} y1={yLow} y2={yLow} stroke={color} strokeWidth="1.1" />
@@ -350,8 +364,17 @@ export function LightcurveChart({ lightcurve, className, compact = false }: Ligh
       </svg>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] text-haze">
+        {wavelengthRange && (
+          <span className="inline-flex items-center gap-1.5 text-amber-soft">
+            range {formatWavelengthRange(wavelengthRange)}
+          </span>
+        )}
         {wavelengths.map((group) => (
-          <span key={group} className="inline-flex items-center gap-1.5">
+          <span
+            key={group}
+            className="inline-flex items-center gap-1.5"
+            style={{ opacity: wavelengthGroupInRange(group) ? 1 : 0.45 }}
+          >
             <span
               aria-hidden="true"
               className="size-2 rounded-full"
@@ -401,7 +424,13 @@ export function LightcurveChart({ lightcurve, className, compact = false }: Ligh
             </thead>
             <tbody>
               {points.map((point) => (
-                <tr key={point.frame_ref} className="border-t border-line/70">
+                <tr
+                  key={point.frame_ref}
+                  className={cn(
+                    'border-t border-line/70',
+                    !inSelectedRange(point) && 'opacity-45',
+                  )}
+                >
                   <td className="px-2 py-1.5 font-mono">{formatMjdDate(point.mjd)}</td>
                   <td className="px-2 py-1.5 text-right font-mono">{formatWavelength(point.wavelength_um)}</td>
                   <td className="px-2 py-1.5 text-right font-mono">

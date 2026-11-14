@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SpectrumView } from './SpectrumView';
 import { LightcurveChart } from './LightcurveChart';
@@ -114,6 +114,15 @@ describe('SpectrumView', () => {
     ).toBeInTheDocument();
   });
 
+  it('dims SED bins outside the selected wavelength range', () => {
+    const { container } = render(
+      <SpectrumView spectrum={SED} wavelengthRange={[0.7, 1.2]} />,
+    );
+
+    expect(screen.getByText(/range 0\.70–1\.20 µm/i)).toBeInTheDocument();
+    expect(container.querySelectorAll('g[opacity="0.22"]')).toHaveLength(1);
+  });
+
   it('shows the honest reason when the SED has insufficient data', () => {
     render(
       <SpectrumView
@@ -150,10 +159,26 @@ describe('LightcurveChart', () => {
     await user.click(screen.getByRole('button', { name: /view as table/i }));
     await waitFor(() => expect(screen.getAllByText('HALO').length).toBeGreaterThan(0));
   });
+
+  it('dims measurements outside the selected wavelength range', () => {
+    const ranged: Lightcurve = {
+      ...LIGHTCURVE,
+      points: [
+        point({ frame_ref: 'fr-in', mjd: 60840, wavelength_um: 0.75 }),
+        point({ frame_ref: 'fr-out', mjd: 60841, wavelength_um: 1.6 }),
+      ],
+    };
+    const { container } = render(
+      <LightcurveChart lightcurve={ranged} wavelengthRange={[0.7, 0.8]} />,
+    );
+
+    expect(screen.getByText(/range 0\.70–0\.80 µm/i)).toBeInTheDocument();
+    expect(container.querySelectorAll('g[opacity="0.22"]')).toHaveLength(1);
+  });
 });
 
 describe('WavelengthCoverage', () => {
-  it('is read-only and counts only stored frame wavelengths', () => {
+  it('is read-only by default and counts only stored wavelengths', () => {
     render(
       <WavelengthCoverage
         frames={[
@@ -165,9 +190,97 @@ describe('WavelengthCoverage', () => {
       />,
     );
 
-    expect(screen.getByRole('img', { name: /3 stored frames: 2 distinct bands/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: /3 stored frames: 2 distinct wavelengths/i }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/read-only · from stored frames/i)).toBeInTheDocument();
-    expect(screen.getByText(/2 bands · 3 frames/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 wavelengths · 3 frames/i)).toBeInTheDocument();
+    expect(screen.getByTestId('wavelength-range-label')).toHaveTextContent(
+      '0.75–1.60 µm · all 3 frames · all 3 SED bins',
+    );
     expect(screen.queryByText(/102 bands/i)).not.toBeInTheDocument();
+  });
+
+  it('labels a selected range with real frame and SED counts', () => {
+    const { container } = render(
+      <WavelengthCoverage
+        frames={[
+          { wavelength_um: 0.75, detector: 1 },
+          { wavelength_um: 1.1, detector: 1 },
+          { wavelength_um: 1.1, detector: 2 },
+          { wavelength_um: 1.6, detector: 1 },
+          { wavelength_um: 1.6, detector: 2 },
+        ]}
+        spectrum={SED}
+        selection={[0.75, 1.1]}
+      />,
+    );
+
+    expect(screen.getByTestId('wavelength-range-label')).toHaveTextContent(
+      '0.75–1.10 µm · 3 of 5 frames · 2 of 3 SED bins',
+    );
+    expect(container.querySelectorAll('g[opacity="0.22"]')).toHaveLength(1);
+  });
+
+  it('selects and clears a wavelength interval from the keyboard', async () => {
+    const user = userEvent.setup();
+    const onSelectionChange = vi.fn();
+    render(
+      <WavelengthCoverage
+        frames={[
+          { wavelength_um: 0.75, detector: 1 },
+          { wavelength_um: 1.1, detector: 1 },
+          { wavelength_um: 1.6, detector: 1 },
+        ]}
+        onSelectionChange={onSelectionChange}
+      />,
+    );
+
+    const plot = screen.getByTestId('wavelength-coverage-plot');
+    plot.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(onSelectionChange).toHaveBeenLastCalledWith([0.75, 0.77]);
+
+    await user.keyboard('{Escape}');
+    expect(onSelectionChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it('drags a wavelength interval and clears on a plain click', () => {
+    const onSelectionChange = vi.fn();
+    render(
+      <WavelengthCoverage
+        frames={[
+          { wavelength_um: 0.75, detector: 1 },
+          { wavelength_um: 1.1, detector: 1 },
+          { wavelength_um: 1.6, detector: 1 },
+        ]}
+        onSelectionChange={onSelectionChange}
+      />,
+    );
+
+    const plot = screen.getByTestId('wavelength-coverage-plot');
+    const rect = vi.spyOn(plot, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 640,
+      height: 112,
+      right: 640,
+      bottom: 112,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    try {
+      fireEvent.pointerDown(plot, { clientX: 0, pointerId: 1 });
+      fireEvent.pointerMove(plot, { clientX: (0.35 / 0.85) * 640, pointerId: 1 });
+      fireEvent.pointerUp(plot, { clientX: (0.35 / 0.85) * 640, pointerId: 1 });
+      expect(onSelectionChange).toHaveBeenLastCalledWith([0.75, 1.1]);
+
+      fireEvent.pointerDown(plot, { clientX: 100, pointerId: 1 });
+      fireEvent.pointerUp(plot, { clientX: 100, pointerId: 1 });
+      expect(onSelectionChange).toHaveBeenLastCalledWith(null);
+    } finally {
+      rect.mockRestore();
+    }
   });
 });

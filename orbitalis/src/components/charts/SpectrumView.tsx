@@ -1,5 +1,6 @@
 import type { Spectrum, SpectrumPoint } from '@/data/types';
-import { formatFluxMjy, formatWavelength } from '@/lib/format';
+import { formatFluxMjy, formatWavelength, formatWavelengthRange } from '@/lib/format';
+import { inWavelengthRange, normalizeWavelengthRange, type WavelengthRange } from '@/lib/wavelength';
 
 const DETECTED = '#55d6e8';
 const LIMIT = '#f5b942';
@@ -32,7 +33,14 @@ function pointLabel(point: SpectrumPoint): string {
  * calibrated spectrum and not band-averaged medians. Null flux is a masked
  * gap: it is drawn as a marker, never as zero and never connected by a line.
  */
-export function SpectrumView({ spectrum }: { spectrum: Spectrum | undefined }) {
+export function SpectrumView({
+  spectrum,
+  wavelengthRange: wavelengthRangeProp = null,
+}: {
+  spectrum: Spectrum | undefined;
+  wavelengthRange?: WavelengthRange | null;
+}) {
+  const wavelengthRange = normalizeWavelengthRange(wavelengthRangeProp);
   if (!spectrum) {
     return <p className="m-0 text-[12px] text-haze">The SED has not loaded.</p>;
   }
@@ -113,6 +121,11 @@ export function SpectrumView({ spectrum }: { spectrum: Spectrum | undefined }) {
     pad.left + ((value - xMin) / xSpan) * plotWidth;
   const yScale = (value: number) =>
     pad.top + plotHeight - ((value - yMin) / (yMax - yMin)) * plotHeight;
+  const inSelectedRange = (point: SpectrumPoint) =>
+    !wavelengthRange || inWavelengthRange(point.wavelength_um, wavelengthRange);
+  const rangeLow = wavelengthRange ? Math.max(xMin, wavelengthRange[0]) : null;
+  const rangeHigh = wavelengthRange ? Math.min(xMax, wavelengthRange[1]) : null;
+  const hasRangeBand = rangeLow !== null && rangeHigh !== null && rangeLow <= rangeHigh;
 
   const xTicks = [0, 0.25, 0.5, 0.75, 1].map((fraction) => xMin + fraction * xSpan);
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map(
@@ -202,6 +215,37 @@ export function SpectrumView({ spectrum }: { spectrum: Spectrum | undefined }) {
           </g>
         ))}
 
+        {hasRangeBand && rangeLow !== null && rangeHigh !== null && (
+          <g aria-hidden="true">
+            <rect
+              x={xScale(rangeLow)}
+              y={pad.top}
+              width={Math.max(1, xScale(rangeHigh) - xScale(rangeLow))}
+              height={plotHeight}
+              fill="#feb832"
+              fillOpacity="0.07"
+            />
+            <line
+              x1={xScale(rangeLow)}
+              x2={xScale(rangeLow)}
+              y1={pad.top}
+              y2={height - pad.bottom}
+              stroke="#feb832"
+              strokeOpacity="0.45"
+              strokeWidth="1"
+            />
+            <line
+              x1={xScale(rangeHigh)}
+              x2={xScale(rangeHigh)}
+              y1={pad.top}
+              y2={height - pad.bottom}
+              stroke="#feb832"
+              strokeOpacity="0.45"
+              strokeWidth="1"
+            />
+          </g>
+        )}
+
         {segments.map(([left, right]) => (
           <line
             key={`${left.wavelength_um}-${right.wavelength_um}`}
@@ -210,16 +254,17 @@ export function SpectrumView({ spectrum }: { spectrum: Spectrum | undefined }) {
             x2={xScale(right.wavelength_um)}
             y2={yScale(right.flux_mjy as number)}
             stroke={DETECTED}
-            strokeOpacity="0.35"
+            strokeOpacity={inSelectedRange(left) && inSelectedRange(right) ? 0.35 : 0.08}
             strokeWidth="1.2"
           />
         ))}
 
         {points.map((point) => {
           const x = xScale(point.wavelength_um);
+          const dimmed = !inSelectedRange(point);
           if (point.flux_mjy === null) {
             return (
-              <g key={`masked-${point.wavelength_um}`}>
+              <g key={`masked-${point.wavelength_um}`} opacity={dimmed ? 0.22 : 1}>
                 <line
                   x1={x}
                   x2={x}
@@ -248,7 +293,7 @@ export function SpectrumView({ spectrum }: { spectrum: Spectrum | undefined }) {
           if (!point.detected) {
             if (point.upper_limit_mjy === null) {
               return (
-                <g key={`limit-missing-${point.wavelength_um}`}>
+                <g key={`limit-missing-${point.wavelength_um}`} opacity={dimmed ? 0.22 : 1}>
                   <line
                     x1={x}
                     x2={x}
@@ -275,7 +320,7 @@ export function SpectrumView({ spectrum }: { spectrum: Spectrum | undefined }) {
             }
             const y = yScale(point.upper_limit_mjy);
             return (
-              <g key={`limit-${point.wavelength_um}`}>
+              <g key={`limit-${point.wavelength_um}`} opacity={dimmed ? 0.22 : 1}>
                 <path
                   d={`M${x - 3.5},${y - 3.5} L${x + 3.5},${y - 3.5} L${x},${y + 3.5} Z`}
                   fill="none"
@@ -292,7 +337,7 @@ export function SpectrumView({ spectrum }: { spectrum: Spectrum | undefined }) {
           const yHigh = yScale(point.flux_mjy + err);
           const yLow = yScale(point.flux_mjy - err);
           return (
-            <g key={`detected-${point.wavelength_um}`}>
+            <g key={`detected-${point.wavelength_um}`} opacity={dimmed ? 0.22 : 1}>
               <line x1={x} x2={x} y1={yHigh} y2={yLow} stroke={DETECTED} strokeWidth="1.1" />
               <line
                 x1={x - 2.5}
@@ -335,6 +380,11 @@ export function SpectrumView({ spectrum }: { spectrum: Spectrum | undefined }) {
       </svg>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] text-haze">
+        {wavelengthRange && (
+          <span className="inline-flex items-center gap-1.5 text-amber-soft">
+            range {formatWavelengthRange(wavelengthRange)}
+          </span>
+        )}
         <span className="inline-flex items-center gap-1.5">
           <span aria-hidden="true" className="size-2 rounded-full" style={{ background: DETECTED }} />
           detected
