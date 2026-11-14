@@ -14,7 +14,5 @@ export interface SkyRendererProps {
   field: FieldInfo;
   items: SkyItem[];
   onSelect: (candidateId: number) => void;
-  showGrid?: boolean;
-  showConstellations?: boolean;
   ref?: Ref<SkyHandle>;
 }

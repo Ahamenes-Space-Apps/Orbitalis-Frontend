@@ -7,9 +7,6 @@ import '@fontsource-variable/jetbrains-mono';
 import './index.css';
 import { App } from './App';
 
-const storedTheme = window.localStorage.getItem('orbitalis-theme');
-document.documentElement.classList.toggle('dark', storedTheme !== 'light');
-
 const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 1 } },
 });

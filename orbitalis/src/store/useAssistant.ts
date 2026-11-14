@@ -46,7 +46,7 @@ function nextId() {
 
 export const useAssistant = create<AssistantState>((set, get) => ({
   open: false,
-  messages: [],//add some immportant featurs like use the thing carefully please
+  messages: [],
   streamingId: null,
   error: null,
 
