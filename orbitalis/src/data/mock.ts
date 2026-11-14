@@ -45,6 +45,7 @@ interface FieldBundle {
   candidate_details: Record<string, CandidateDetail>;
   candidate_frames: Record<string, CandidateFrame[]>;
   candidate_lightcurves: Record<string, { data: Lightcurve; meta: Record<string, unknown> }>;
+  candidate_spectra: Record<string, { data: Spectrum; meta: Record<string, unknown> }>;
 }
 
 interface Bundle {
@@ -243,6 +244,26 @@ export const mockApi = {
   async spectrum(fieldId: string) {
     const bundle = await loadBundle();
     return wait(fieldFor(bundle, fieldId).spectrum);
+  },
+
+  async candidateSpectrum(candidateId: string) {
+    const bundle = await loadBundle();
+    for (const entry of Object.values(bundle.fields)) {
+      const found = entry.candidate_spectra?.[candidateId];
+      if (found) return wait(found);
+      if (entry.candidate_details[candidateId]) {
+        return wait<{ data: Spectrum; meta: Record<string, unknown> }>({
+          data: {
+            status: 'insufficient_data',
+            reason: 'This candidate has no spectrum in the demo bundle.',
+            points: null,
+            method: null,
+          },
+          meta: { mock: true },
+        });
+      }
+    }
+    throw new ApiError('ORB-API-002', `Candidate ${candidateId} is not in the demo bundle.`, 404);
   },
 
   async overlays(fieldId: string, kind: 'known' | 'hypothesis') {

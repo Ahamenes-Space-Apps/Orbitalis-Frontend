@@ -1,6 +1,7 @@
 import type { CandidateSummary, Field, Frame, Overlay } from '@/data/types';
 import type { LayerName, ViewMode } from '@/state/urlState';
 import { Button } from '@/components/ui/button';
+import { WavelengthCoverage } from '@/components/charts/WavelengthCoverage';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { formatArcsec } from '@/lib/format';
@@ -16,6 +17,7 @@ interface LayerPanelProps {
   exag: number;
   view: ViewMode;
   showFlags: boolean;
+  selectedWavelength?: number | null;
   onToggleLayer: (layer: LayerName) => void;
   onExaggeration: (value: number) => void;
   onView: (view: ViewMode) => void;
@@ -39,6 +41,7 @@ export function LayerPanel({
   exag,
   view,
   showFlags,
+  selectedWavelength = null,
   onToggleLayer,
   onExaggeration,
   onView,
@@ -138,6 +141,22 @@ export function LayerPanel({
           <span className="text-mist">Show flags</span>
           <Switch checked={showFlags} onCheckedChange={onShowFlags} aria-label="Show quality flags" />
         </label>
+      </section>
+
+      <section className="flex flex-col gap-2 border-t border-line pt-3" aria-labelledby="wavelength-heading">
+        <div className="flex items-baseline justify-between gap-2">
+          <h2
+            id="wavelength-heading"
+            className="m-0 text-[11px] font-semibold tracking-[0.14em] text-haze uppercase"
+          >
+            Wavelength coverage
+          </h2>
+          <span className="font-mono text-[10px] text-haze">infrared</span>
+        </div>
+        <WavelengthCoverage frames={frames} selectedWavelength={selectedWavelength} />
+        <p className="m-0 leading-snug text-haze">
+          Stored frame wavelengths only. This is read-only; it does not select a calibrated band.
+        </p>
       </section>
 
       <section className="flex flex-col gap-2 border-t border-line pt-3" aria-labelledby="motion-heading">

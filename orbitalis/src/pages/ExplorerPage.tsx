@@ -422,6 +422,7 @@ function ExplorerWorkspace({ fieldId }: { fieldId: string }) {
                 exag={values.exag}
                 view={values.view}
                 showFlags={showFlags}
+                selectedWavelength={selectedFrame?.wavelength_um ?? null}
                 onToggleLayer={toggleLayer}
                 onExaggeration={(value) => update({ exag: value })}
                 onView={(view) => update({ view })}

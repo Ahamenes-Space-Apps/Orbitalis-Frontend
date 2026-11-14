@@ -209,6 +209,11 @@ export const api = {
       ? mockApi.spectrum(fieldId)
       : request<Spectrum>(`/fields/${encodeURIComponent(fieldId)}/spectrum${searchParams({ ra, dec })}`),
 
+  candidateSpectrum: (candidateId: string) =>
+    usingMockApi
+      ? mockApi.candidateSpectrum(candidateId)
+      : request<Spectrum>(`/candidates/${encodeURIComponent(candidateId)}/spectrum`),
+
   experiments: (fieldId: string) =>
     usingMockApi
       ? mockApi.experiments(fieldId)

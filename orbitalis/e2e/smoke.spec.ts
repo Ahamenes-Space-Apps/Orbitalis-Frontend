@@ -25,6 +25,9 @@ test('landing lists real-data presets and opens the explorer', async ({ page }) 
   await expect(page.getByTestId('field-chip')).toBeVisible();
   await expect(page.getByText('5 frames · 10 candidates')).toBeVisible();
   await expect(page.getByRole('region', { name: 'Frame scrubber' })).toBeVisible();
+  // Mock mode has no chat transport, so even a capability snapshot cannot
+  // produce a dead assistant control.
+  await expect(page.getByRole('button', { name: /ask the assistant/i })).toHaveCount(0);
 });
 
 test('explorer scrubber, queue and candidate drawer', async ({ page }) => {
@@ -68,6 +71,22 @@ test('candidates estimate and replay a stored run', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Run search' }).click();
   await expect(page.getByText('Showing results from an earlier identical run.')).toBeVisible();
+  await expectNoBannedCopy(page);
+});
+
+test('the dossier restores the full candidate page with live sections', async ({ page }) => {
+  await page.goto('/candidates/c_8903f6dec3d85ec2624e925e?f=' + TUTORIAL);
+
+  await expect(page.getByRole('heading', { name: /Candidate #001/ })).toBeVisible();
+  await expect(page.getByText('Unconfirmed').first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Stack versus originals' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Motion' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Light curve' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Spectral energy distribution' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Wavelength coverage' })).toBeVisible();
+  await expect(page.getByText(/read-only · from stored frames/i)).toBeVisible();
+  await expect(page.getByText(/quick-look SED/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /export report/i })).toBeVisible();
   await expectNoBannedCopy(page);
 });
 

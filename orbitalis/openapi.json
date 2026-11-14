@@ -534,6 +534,51 @@
         ]
       }
     },
+    "/api/v1/candidates/{candidate_id}/spectrum": {
+      "get": {
+        "description": "Quick-look spectrum along the candidate's track: per-wavelength bins of\nthe same aperture photometry used by the candidate lightcurve.",
+        "operationId": "candidate_spectrum_api_v1_candidates__candidate_id__spectrum_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "candidate_id",
+            "required": true,
+            "schema": {
+              "title": "Candidate Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Candidate Spectrum Api V1 Candidates  Candidate Id  Spectrum Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Candidate Spectrum",
+        "tags": [
+          "candidates"
+        ]
+      }
+    },
     "/api/v1/candidates/{candidate_id}/stack.png": {
       "get": {
         "operationId": "candidate_stack_png_api_v1_candidates__candidate_id__stack_png_get",
@@ -1455,7 +1500,7 @@
     },
     "/api/v1/fields/{field_id}/spectrum": {
       "get": {
-        "description": "Spectrum at a position (SDD \u00a78.2). Extraction is not built yet, so the\nhonest \u00a78.5 answer is ``insufficient_data`` \u2014 never a guess.",
+        "description": "Quick-look spectrum at a position: per-wavelength aperture photometry.\n\nReuses the lightcurve measurement path and bins flux by ``wavelength_um``\n\u2014 an estimate with supporting data (\u00a78.5), ``insufficient_data`` when too\nfew bands carry flux. Not a calibrated spectrum (``method.calibrated``).",
         "operationId": "field_spectrum_api_v1_fields__field_id__spectrum_get",
         "parameters": [
           {

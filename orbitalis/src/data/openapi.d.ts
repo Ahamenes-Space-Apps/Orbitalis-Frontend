@@ -132,6 +132,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/candidates/{candidate_id}/spectrum": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Candidate Spectrum
+         * @description Quick-look spectrum along the candidate's track: per-wavelength bins of
+         *     the same aperture photometry used by the candidate lightcurve.
+         */
+        get: operations["candidate_spectrum_api_v1_candidates__candidate_id__spectrum_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/candidates/{candidate_id}/stack.png": {
         parameters: {
             query?: never;
@@ -485,8 +506,11 @@ export interface paths {
         };
         /**
          * Field Spectrum
-         * @description Spectrum at a position (SDD §8.2). Extraction is not built yet, so the
-         *     honest §8.5 answer is ``insufficient_data`` — never a guess.
+         * @description Quick-look spectrum at a position: per-wavelength aperture photometry.
+         *
+         *     Reuses the lightcurve measurement path and bins flux by ``wavelength_um``
+         *     — an estimate with supporting data (§8.5), ``insufficient_data`` when too
+         *     few bands carry flux. Not a calibrated spectrum (``method.calibrated``).
          */
         get: operations["field_spectrum_api_v1_fields__field_id__spectrum_get"];
         put?: never;
@@ -936,6 +960,39 @@ export interface operations {
         };
     };
     candidate_lightcurve_api_v1_candidates__candidate_id__lightcurve_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    candidate_spectrum_api_v1_candidates__candidate_id__spectrum_get: {
         parameters: {
             query?: never;
             header?: never;

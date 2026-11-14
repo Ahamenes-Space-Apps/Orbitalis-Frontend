@@ -25,6 +25,7 @@ export const keys = {
   candidateLightcurve: (id: string) => ['candidate-lightcurve', id] as const,
   fieldLightcurve: (id: string, ra: number, dec: number) => ['field-lightcurve', id, ra, dec] as const,
   spectrum: (id: string, ra: number, dec: number) => ['spectrum', id, ra, dec] as const,
+  candidateSpectrum: (id: string) => ['candidate-spectrum', id] as const,
   jobs: (id: string) => ['jobs', id] as const,
   job: (id: string) => ['job', id] as const,
 };
@@ -141,6 +142,14 @@ export const useSpectrum = (fieldId: string | null, ra: number, dec: number) =>
     queryKey: keys.spectrum(fieldId ?? '', ra, dec),
     queryFn: () => api.spectrum(fieldId as string, ra, dec),
     enabled: Boolean(fieldId) && Number.isFinite(ra) && Number.isFinite(dec),
+    staleTime: 60_000,
+  });
+
+export const useCandidateSpectrum = (candidateId: string | null) =>
+  useQuery({
+    queryKey: keys.candidateSpectrum(candidateId ?? ''),
+    queryFn: () => api.candidateSpectrum(candidateId as string),
+    enabled: Boolean(candidateId),
     staleTime: 60_000,
   });
 

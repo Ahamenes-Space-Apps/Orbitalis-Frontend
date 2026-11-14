@@ -124,6 +124,26 @@ describe('mock client', () => {
     expect(api.candidateStack('f_a', 'c_b')).toBe('/mock/images/f_a/stack-c_b.png');
     expect(api.candidateCutout('f_a', 'c_b', 'fr_1')).toBe('/mock/images/f_a/cutout-c_b-fr_1.png');
   });
+
+  it('serves candidate quick-look SED bins from the demo bundle', async () => {
+    const envelope = await api.candidateSpectrum('c_8903f6dec3d85ec2624e925e');
+    expect(envelope.data.status).toBe('ok');
+    const points = envelope.data.points ?? [];
+    expect(points.length).toBeGreaterThan(0);
+    expect(points[0]).toMatchObject({
+      detected: expect.any(Boolean),
+      n_frames: expect.any(Number),
+    });
+    expect(envelope.data.method?.calibrated).toBe(false);
+  });
+
+  it('keeps masked light-curve flux null instead of zero', async () => {
+    const envelope = await api.candidateLightcurve('c_fbb5d5226efe508fe1e04e68');
+    const masked = envelope.data.points.filter((point) => point.flux_mjy === null);
+    expect(masked.length).toBeGreaterThan(0);
+    expect(masked[0].masked_bits).toContain('HALO');
+    expect(masked[0].aperture_coverage).toBeLessThan(0.8);
+  });
 });
 
 describe('live client', () => {

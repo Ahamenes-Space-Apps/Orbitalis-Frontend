@@ -201,12 +201,15 @@ export interface LightcurvePoint {
   dec: number | null;
   predicted_x?: number | null;
   predicted_y?: number | null;
-  flux_mjy: number;
-  flux_err_mjy: number;
-  upper_limit_mjy: number;
-  snr: number;
+  /** Null when the aperture is masked or has too little coverage. */
+  flux_mjy: number | null;
+  flux_err_mjy: number | null;
+  upper_limit_mjy: number | null;
+  snr: number | null;
   detected: boolean;
-  aperture_coverage: number;
+  aperture_coverage: number | null;
+  /** Flag bits responsible for masking, when the aperture was clipped. */
+  masked_bits?: string[] | null;
   background_mjy_sr?: number;
 }
 
@@ -241,18 +244,41 @@ export interface Lightcurve {
   points: LightcurvePoint[];
 }
 
-export interface SpectrumPoint {
-  wavelength_um: number;
-  flux: number;
-  flux_err?: number | null;
-  unit?: string;
-  frame_ref?: string;
+export interface SpectrumMethod {
+  kind: string;
+  centroid_radius_px?: number;
+  aperture_radius_px?: number;
+  annulus_px?: [number, number];
+  min_snr?: number;
+  min_aperture_coverage?: number;
+  upper_limit_sigma?: number;
+  note: string;
+  calibrated: false;
+  [key: string]: unknown;
 }
 
-export type Spectrum =
-  | { status: 'insufficient_data'; reason: string; points: null }
-  | { status: 'ok'; points: SpectrumPoint[]; [key: string]: unknown }
-  | { status: string; reason?: string; points: SpectrumPoint[] | null };
+/**
+ * One quick-look SED bin. `flux_mjy` and its companions are null when the
+ * aperture was masked or did not cover enough pixels; a null is a gap, not a
+ * zero measurement.
+ */
+export interface SpectrumPoint {
+  wavelength_um: number;
+  flux_mjy: number | null;
+  flux_err_mjy: number | null;
+  upper_limit_mjy: number | null;
+  n_frames: number;
+  n_detected: number;
+  detected: boolean;
+  masked_bits: string[] | null;
+}
+
+export interface Spectrum {
+  status: 'ok' | 'insufficient_data' | string;
+  reason?: string | null;
+  points: SpectrumPoint[] | null;
+  method?: SpectrumMethod | null;
+}
 
 export interface OverlayItem {
   id: string;

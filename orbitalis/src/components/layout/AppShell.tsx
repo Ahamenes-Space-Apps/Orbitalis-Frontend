@@ -3,11 +3,14 @@ import { NavLink, useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { pageTransition } from '@/lib/motion';
 import { formatDec, formatGalactic, formatRa } from '@/lib/coords';
-import { useField } from '@/data/hooks';
+import { useCapabilities, useField } from '@/data/hooks';
+import { usingMockApi } from '@/data/api';
 import { useSearchPreservingPath, useUrlState } from '@/state/urlState';
 import { useUi } from '@/store/useUi';
 import { ModeBanner } from '@/components/common/ModeBanner';
 import { FieldEntry } from '@/components/explorer/FieldEntry';
+import { AssistantLauncher } from '@/components/assistant/AssistantLauncher';
+import { AssistantPanel } from '@/components/assistant/AssistantPanel';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -41,6 +44,11 @@ function NavItem({ to, end, children }: { to: string; end?: boolean; children: R
 export function AppShell() {
   const { values, update } = useUrlState();
   const { data: fieldEnvelope } = useField(values.f);
+  const { data: capabilities } = useCapabilities();
+  // Mock mode has no chat transport, so a dead control is never shown even if
+  // the bundled capability snapshot says the assistant is on.
+  const assistantEnabled =
+    !usingMockApi && Boolean(capabilities?.data.assistant.enabled);
   const frameSystem = values.sys;
   const cursor = useUi((state) => state.cursor);
   const fieldEntryOpen = useUi((state) => state.fieldEntryOpen);
@@ -149,7 +157,11 @@ export function AppShell() {
             </motion.div>
           </AnimatePresence>
         </main>
+
+        {assistantEnabled && <AssistantPanel />}
       </div>
+
+      {assistantEnabled && <AssistantLauncher />}
 
       {fieldEntryOpen && <FieldEntry variant="dialog" />}
     </div>

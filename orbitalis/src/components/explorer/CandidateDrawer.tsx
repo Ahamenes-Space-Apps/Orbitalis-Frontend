@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Copy, Crosshair, ExternalLink, MousePointer2, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Copy, Crosshair, ExternalLink, FileText, MousePointer2, X } from 'lucide-react';
 import { api } from '@/data/api';
 import {
   useCandidate,
   useCandidateLightcurve,
+  useCandidateSpectrum,
   useCapabilities,
-  useSpectrum,
 } from '@/data/hooks';
 import type { Field } from '@/data/types';
 import {
@@ -25,6 +26,7 @@ import { ErrorNote } from '@/components/common/ErrorNote';
 import { Skeleton } from '@/components/common/Primitives';
 import { LightcurveChart } from '@/components/charts/LightcurveChart';
 import { SpectrumView } from '@/components/charts/SpectrumView';
+import { WavelengthCoverage } from '@/components/charts/WavelengthCoverage';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -103,6 +105,8 @@ export interface CandidateDrawerProps {
   variant?: 'drawer' | 'pane';
   onClose?: () => void;
   onSelectOnMap?: () => void;
+  /** The dossier page supplies its own header and export controls. */
+  hideHeader?: boolean;
   className?: string;
 }
 
@@ -117,10 +121,12 @@ export function CandidateDrawer({
   variant = 'drawer',
   onClose,
   onSelectOnMap,
+  hideHeader = false,
   className,
 }: CandidateDrawerProps) {
   const detail = useCandidate(candidateId);
   const lightcurve = useCandidateLightcurve(candidateId);
+  const spectrum = useCandidateSpectrum(candidateId);
   const capabilities = useCapabilities();
   const rankingEnabled = Boolean(capabilities.data?.data.ranking.enabled);
   const classificationEnabled = Boolean(capabilities.data?.data.classification.enabled);
@@ -132,11 +138,6 @@ export function CandidateDrawer({
   const frames = useMemo(
     () => [...(candidate?.frames ?? [])].sort((a, b) => a.mjd - b.mjd),
     [candidate?.frames],
-  );
-  const spectrum = useSpectrum(
-    field.field_id,
-    candidate?.position.ra ?? Number.NaN,
-    candidate?.position.dec ?? Number.NaN,
   );
 
   useEffect(() => {
@@ -201,23 +202,24 @@ export function CandidateDrawer({
 
   const body = (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex items-start justify-between gap-3 border-b border-line px-4 py-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="m-0 font-mono text-xl font-semibold text-white">
-              {formatId(candidate?.ordinal)}
-            </h2>
-            <Badge tone="amber" className="px-2 py-0.5 text-[10px]">
-              Unconfirmed
-            </Badge>
-            <span className="text-[11px] text-haze">
-              {candidate?.static_source ? 'Static-source flag' : 'Moving'}
-            </span>
-          </div>
-          {candidate && (
-            <p className="m-0 font-mono text-[11px] text-haze">
-              {formatRa(candidate.position.ra)} · {formatDec(candidate.position.dec)}
-            </p>
+      {!hideHeader && (
+        <header className="flex items-start justify-between gap-3 border-b border-line px-4 py-3">
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="m-0 font-mono text-xl font-semibold text-white">
+                {formatId(candidate?.ordinal)}
+              </h2>
+              <Badge tone="amber" className="px-2 py-0.5 text-[10px]">
+                Unconfirmed
+              </Badge>
+              <span className="text-[11px] text-haze">
+                {candidate?.static_source ? 'Static-source flag' : 'Moving'}
+              </span>
+            </div>
+            {candidate && (
+              <p className="m-0 font-mono text-[11px] text-haze">
+                {formatRa(candidate.position.ra)} · {formatDec(candidate.position.dec)}
+              </p>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1">
@@ -238,6 +240,14 @@ export function CandidateDrawer({
           >
             <ExternalLink className="size-4" aria-hidden="true" />
           </Button>
+          <Link
+            to={`/candidates/${encodeURIComponent(candidateId)}?f=${encodeURIComponent(field.field_id)}`}
+            aria-label="Open full dossier"
+            title="Open full dossier"
+            className="grid size-8 place-items-center rounded-md text-haze transition-colors hover:bg-panel-2 hover:text-ink"
+          >
+            <FileText className="size-4" aria-hidden="true" />
+          </Link>
           {onClose && (
             <Button variant="ghost" size="icon" aria-label="Close candidate detail" onClick={onClose}>
               <X className="size-4" aria-hidden="true" />
@@ -245,6 +255,7 @@ export function CandidateDrawer({
           )}
         </div>
       </header>
+      )}
 
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4">
         {detail.isLoading && (
@@ -460,14 +471,29 @@ export function CandidateDrawer({
             </section>
 
             <section className="flex flex-col gap-2 border-t border-line pt-4" aria-labelledby="spectrum-heading">
-              <h3 id="spectrum-heading" className="m-0 text-[13px] font-semibold">
-                Spectrum
-              </h3>
-              {spectrum.data ? (
-                <SpectrumView spectrum={spectrum.data.data} />
-              ) : (
-                <p className="m-0 text-[12px] text-haze">Checking for spectrum coverage…</p>
+              <div className="flex items-baseline justify-between gap-2">
+                <h3 id="spectrum-heading" className="m-0 text-[13px] font-semibold">
+                  Spectral energy distribution
+                </h3>
+                <span className="text-[10px] text-haze">quick-look · not calibrated</span>
+              </div>
+              {spectrum.isLoading && <Skeleton className="h-24 w-full" />}
+              {spectrum.isError && (
+                <p className="m-0 text-[12px] leading-snug text-haze">
+                  No spectral energy distribution is available for this candidate.
+                </p>
               )}
+              {spectrum.data && <SpectrumView spectrum={spectrum.data.data} />}
+              <div className="mt-1 border-t border-line pt-2">
+                <h4 className="m-0 mb-1 text-[11px] font-semibold tracking-[0.12em] text-haze uppercase">
+                  Wavelength coverage
+                </h4>
+                <WavelengthCoverage
+                  frames={frames}
+                  spectrum={spectrum.data?.data}
+                  selectedWavelength={current?.wavelength_um ?? null}
+                />
+              </div>
             </section>
 
             <section className="flex flex-col gap-2 border-t border-line pt-4" aria-labelledby="provenance-heading">
