@@ -114,16 +114,10 @@ export function SpectrumView({
   }
   const xSpan = xMax - xMin;
 
-  let yMin = Math.min(...ys);
-  let yMax = Math.max(...ys);
-  if (yMax === yMin) {
-    const span = Math.max(Math.abs(yMax) * 0.2, 1e-12);
-    yMin -= span;
-    yMax += span;
-  }
-  const yPad = (yMax - yMin) * 0.1;
-  yMin -= yPad;
-  yMax += yPad;
+  // Bars encode magnitude from zero flux, so the y axis is anchored at 0.
+  const yMin = 0;
+  const yTop = Math.max(...ys, 0);
+  const yMax = yTop === 0 ? 1 : yTop * 1.1;
 
   const xScale = (value: number) =>
     pad.left + ((value - xMin) / xSpan) * plotWidth;
@@ -135,7 +129,10 @@ export function SpectrumView({
   const rangeHigh = wavelengthRange ? Math.min(xMax, wavelengthRange[1]) : null;
   const hasRangeBand = rangeLow !== null && rangeHigh !== null && rangeLow <= rangeHigh;
 
-  const xTicks = [0, 0.25, 0.5, 0.75, 1].map((fraction) => xMin + fraction * xSpan);
+  const xTicks =
+    points.length <= 14
+      ? points.map((point) => point.wavelength_um)
+      : [0, 0.25, 0.5, 0.75, 1].map((fraction) => xMin + fraction * xSpan);
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map(
     (fraction) => yMin + fraction * (yMax - yMin),
   );
@@ -149,21 +146,23 @@ export function SpectrumView({
     (point) => !point.detected && point.flux_mjy !== null && point.upper_limit_mjy === null,
   ).length;
 
-  // Only draw a connecting segment between consecutive detections when no
-  // masked bin sits between them.
-  const segments: Array<[SpectrumPoint, SpectrumPoint]> = [];
-  for (let index = 1; index < points.length; index += 1) {
-    const left = points[index - 1];
-    const right = points[index];
-    if (
-      left.detected &&
-      right.detected &&
-      left.flux_mjy !== null &&
-      right.flux_mjy !== null
-    ) {
-      segments.push([left, right]);
-    }
-  }
+  // Each bar owns the midpoint gap to its neighbours, like a histogram over
+  // the real (non-uniform) wavelength bins.
+  const barEdges = points.map((point, index) => {
+    const prev = points[index - 1]?.wavelength_um;
+    const next = points[index + 1]?.wavelength_um;
+    const fallback = xSpan * 0.08;
+    const left =
+      prev === undefined
+        ? point.wavelength_um - (next === undefined ? fallback : (next - point.wavelength_um) / 2)
+        : (prev + point.wavelength_um) / 2;
+    const right =
+      next === undefined
+        ? point.wavelength_um + (prev === undefined ? fallback : (point.wavelength_um - prev) / 2)
+        : (next + point.wavelength_um) / 2;
+    return [Math.max(xMin, left), Math.min(xMax, right)] as const;
+  });
+  const baselineY = yScale(yMin);
 
   return (
     <div className="flex flex-col gap-2">
@@ -264,37 +263,39 @@ export function SpectrumView({
           </g>
         )}
 
-        {segments.map(([left, right]) => (
-          <line
-            key={`${left.wavelength_um}-${right.wavelength_um}`}
-            x1={xScale(left.wavelength_um)}
-            y1={yScale(left.flux_mjy as number)}
-            x2={xScale(right.wavelength_um)}
-            y2={yScale(right.flux_mjy as number)}
-            stroke={DETECTED}
-            strokeOpacity={inSelectedRange(left) && inSelectedRange(right) ? 0.35 : 0.08}
-            strokeWidth="1.2"
-          />
-        ))}
-
-        {points.map((point) => {
-          const x = xScale(point.wavelength_um);
+        {points.map((point, index) => {
+          const [edgeLeft, edgeRight] = barEdges[index];
+          const x0 = xScale(edgeLeft);
+          const x1 = xScale(edgeRight);
+          const barWidth = Math.max(2, x1 - x0);
+          const barX = (x0 + x1 - barWidth) / 2;
+          const cx = (x0 + x1) / 2;
           const dimmed = !inSelectedRange(point);
+          const groupOpacity = dimmed ? 0.22 : 1;
+
           if (point.flux_mjy === null) {
             return (
-              <g key={`masked-${point.wavelength_um}`} opacity={dimmed ? 0.22 : 1}>
+              <g key={`masked-${point.wavelength_um}`} opacity={groupOpacity}>
+                <rect
+                  x={barX}
+                  y={baselineY - 3}
+                  width={barWidth}
+                  height={3}
+                  fill={MASKED}
+                  opacity="0.45"
+                />
                 <line
-                  x1={x}
-                  x2={x}
+                  x1={cx}
+                  x2={cx}
                   y1={pad.top}
-                  y2={height - pad.bottom}
+                  y2={baselineY}
                   stroke={MASKED}
                   strokeWidth="1"
                   strokeDasharray="2 3"
                   strokeOpacity="0.55"
                 />
                 <text
-                  x={x}
+                  x={cx}
                   y={pad.top - 4}
                   textAnchor="middle"
                   fill={MASKED}
@@ -311,19 +312,19 @@ export function SpectrumView({
           if (!point.detected) {
             if (point.upper_limit_mjy === null) {
               return (
-                <g key={`limit-missing-${point.wavelength_um}`} opacity={dimmed ? 0.22 : 1}>
+                <g key={`limit-missing-${point.wavelength_um}`} opacity={groupOpacity}>
                   <line
-                    x1={x}
-                    x2={x}
+                    x1={cx}
+                    x2={cx}
                     y1={pad.top}
-                    y2={height - pad.bottom}
+                    y2={baselineY}
                     stroke={MASKED}
                     strokeWidth="1"
                     strokeDasharray="2 3"
                     strokeOpacity="0.55"
                   />
                   <text
-                    x={x}
+                    x={cx}
                     y={pad.top - 4}
                     textAnchor="middle"
                     fill={MASKED}
@@ -338,9 +339,18 @@ export function SpectrumView({
             }
             const y = yScale(point.upper_limit_mjy);
             return (
-              <g key={`limit-${point.wavelength_um}`} opacity={dimmed ? 0.22 : 1}>
+              <g key={`limit-${point.wavelength_um}`} opacity={groupOpacity}>
+                <rect
+                  x={barX}
+                  y={y}
+                  width={barWidth}
+                  height={Math.max(1, baselineY - y)}
+                  fill="none"
+                  stroke={LIMIT}
+                  strokeWidth="1.2"
+                />
                 <path
-                  d={`M${x - 3.5},${y - 3.5} L${x + 3.5},${y - 3.5} L${x},${y + 3.5} Z`}
+                  d={`M${cx - 3.5},${y - 3.5} L${cx + 3.5},${y - 3.5} L${cx},${y + 3.5} Z`}
                   fill="none"
                   stroke={LIMIT}
                   strokeWidth="1.1"
@@ -353,27 +363,21 @@ export function SpectrumView({
           const y = yScale(point.flux_mjy);
           const err = Math.abs(point.flux_err_mjy ?? 0);
           const yHigh = yScale(point.flux_mjy + err);
-          const yLow = yScale(point.flux_mjy - err);
+          const yLow = Math.max(yScale(point.flux_mjy - err), baselineY);
+          const cap = Math.min(barWidth * 0.45, 7);
           return (
-            <g key={`detected-${point.wavelength_um}`} opacity={dimmed ? 0.22 : 1}>
-              <line x1={x} x2={x} y1={yHigh} y2={yLow} stroke={DETECTED} strokeWidth="1.1" />
-              <line
-                x1={x - 2.5}
-                x2={x + 2.5}
-                y1={yHigh}
-                y2={yHigh}
-                stroke={DETECTED}
-                strokeWidth="1.1"
+            <g key={`detected-${point.wavelength_um}`} opacity={groupOpacity}>
+              <rect
+                x={barX}
+                y={y}
+                width={barWidth}
+                height={Math.max(1, baselineY - y)}
+                fill={DETECTED}
+                fillOpacity="0.85"
               />
-              <line
-                x1={x - 2.5}
-                x2={x + 2.5}
-                y1={yLow}
-                y2={yLow}
-                stroke={DETECTED}
-                strokeWidth="1.1"
-              />
-              <circle cx={x} cy={y} r="2.8" fill={DETECTED} stroke="#0c1220" strokeWidth="1" />
+              <line x1={cx} x2={cx} y1={yHigh} y2={yLow} stroke={DETECTED} strokeWidth="1.1" />
+              <line x1={cx - cap} x2={cx + cap} y1={yHigh} y2={yHigh} stroke={DETECTED} strokeWidth="1.1" />
+              <line x1={cx - cap} x2={cx + cap} y1={yLow} y2={yLow} stroke={DETECTED} strokeWidth="1.1" />
               <title>{pointLabel(point)}</title>
             </g>
           );
