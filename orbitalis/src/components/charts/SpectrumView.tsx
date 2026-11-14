@@ -5,8 +5,8 @@ import { formatFluxMjy, formatWavelengthRange } from '@/lib/format';
 import { useWidth } from '@/lib/useWidth';
 import { normalizeWavelengthRange, type WavelengthRange } from '@/lib/wavelength';
 
-const DETECTED = '#5B6A94';
-const LIMIT = '#F2B544';
+const DETECTED = '#55d6e8';
+const UNDETECTED = '#3b4a69';
 const MASKED = '#5b6884';
 
 const MONO = '12px "IBM Plex Mono", monospace';
@@ -128,11 +128,10 @@ function SpectrumPlot({ points, wavelengthRange, ariaLabel }: SpectrumPlotProps)
         },
         {
           label: 'Upper limit',
-          stroke: LIMIT,
-          fill: LIMIT,
-          width: 0,
-          paths: () => null,
-          points: { show: true, size: 8 },
+          stroke: UNDETECTED,
+          fill: 'rgba(59,74,105,0.5)',
+          paths: bars,
+          points: { show: false },
           value: fmt,
         },
       ],
@@ -282,13 +281,15 @@ export function SpectrumView({
           </span>
         )}
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true" className="size-2 rounded-full" style={{ background: DETECTED }} />
+          <span aria-hidden="true" className="inline-block h-2.5 w-1.5" style={{ background: DETECTED }} />
           detected
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true" className="text-[11px]" style={{ color: LIMIT }}>
-            ▽
-          </span>
+          <span
+            aria-hidden="true"
+            className="inline-block h-2.5 w-1.5 rounded-[1px]"
+            style={{ background: 'rgba(59,74,105,0.5)', outline: `1px solid ${UNDETECTED}` }}
+          />
           upper limit
         </span>
         <span className="inline-flex items-center gap-1.5">
