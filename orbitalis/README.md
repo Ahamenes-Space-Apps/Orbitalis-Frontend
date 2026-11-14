@@ -25,8 +25,24 @@ With a local backend:
 ORB_OFFLINE=1 uv run uvicorn orbitalis.main:app --port 8080
 
 # in this repository
-VITE_API_URL=http://localhost:8080/api/v1 npm run dev
+VITE_API_URL=/api/v1 npm run dev
 ```
+
+The dev server proxies `/api` to `ORB_API_PROXY_TARGET` (default
+`http://localhost:8080`) and drops the browser `Origin` header, because the
+hosted API only allows configured origins. Live-capable local development is
+therefore:
+
+```bash
+VITE_API_URL=/api/v1 npm run dev                       # local backend
+ORB_API_PROXY_TARGET=https://orbitalis-api-894548039245.me-central1.run.app \
+  VITE_API_URL=/api/v1 npm run dev                     # production API
+```
+
+`.env.development.local` (gitignored) can hold `VITE_API_URL=/api/v1` for the
+default dev server. The assistant only appears in live mode: mock mode has no
+chat transport, so the control is hidden even if a capability snapshot says it
+is enabled.
 
 The production API is `https://orbitalis-api-894548039245.me-central1.run.app/api/v1`. There is no authentication or client-side secret.
 

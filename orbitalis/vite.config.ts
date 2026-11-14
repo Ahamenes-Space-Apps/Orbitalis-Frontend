@@ -1,7 +1,25 @@
 import { defineConfig } from 'vitest/config';
+import type { ProxyOptions } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath, URL } from 'node:url';
+
+// Dev/preview target for `/api` when the client runs with VITE_API_URL=/api/v1.
+// Defaults to the local backend; point it at Cloud Run for live data.
+const apiTarget = process.env.ORB_API_PROXY_TARGET ?? 'http://localhost:8080';
+
+// Cloud Run only allows configured origins. The browser talks to Vite
+// same-origin, so the proxy drops `Origin` before forwarding. Dev-only; no
+// credentials are added and the app's own calls are unchanged.
+const apiProxy: Record<string, ProxyOptions> = {
+  '/api': {
+    target: apiTarget,
+    changeOrigin: true,
+    configure(proxy) {
+      proxy.on('proxyReq', (request) => request.removeHeader('origin'));
+    },
+  },
+};
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -11,8 +29,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    // When VITE_API_URL=/api, requests go to the real backend (Spring Boot / Django / FastAPI).
-    proxy: { '/api': { target: 'http://localhost:8080', changeOrigin: true } },
+    proxy: apiProxy,
+  },
+  preview: {
+    proxy: apiProxy,
   },
   build: {
     // Aladin Lite ships its WebAssembly core inside one large file.
