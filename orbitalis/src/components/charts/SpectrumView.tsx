@@ -5,16 +5,16 @@ import { formatFluxMjy, formatWavelengthRange } from '@/lib/format';
 import { useWidth } from '@/lib/useWidth';
 import { normalizeWavelengthRange, type WavelengthRange } from '@/lib/wavelength';
 
-const DETECTED = '#55d6e8';
-const LIMIT = '#f5b942';
+const DETECTED = '#5B6A94';
+const LIMIT = '#F2B544';
 const MASKED = '#5b6884';
 
 const MONO = '12px "IBM Plex Mono", monospace';
 const AXIS = {
-  stroke: '#7f8ba5',
+  stroke: '#8A94AB',
   font: MONO,
-  grid: { stroke: '#1e2840', width: 1 },
-  ticks: { stroke: '#3b4a69', width: 1 },
+  grid: { stroke: '#1E2840', width: 1 },
+  ticks: { stroke: '#2B3550', width: 1 },
 };
 
 interface SpectrumPlotProps {
@@ -121,7 +121,7 @@ function SpectrumPlot({ points, wavelengthRange, ariaLabel }: SpectrumPlotProps)
         {
           label: 'Detected',
           stroke: DETECTED,
-          fill: 'rgba(85,214,232,0.55)',
+          fill: DETECTED,
           paths: bars,
           points: { show: false },
           value: fmt,
