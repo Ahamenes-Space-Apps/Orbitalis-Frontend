@@ -22,7 +22,7 @@ function expectNoBannedCopy() {
 
 describe('landing', () => {
   it('offers the six real-data presets and says it is mock data', async () => {
-    renderApp('/');
+    renderApp('/explorer');
 
     expect(
       await screen.findByRole('heading', { name: /choose a patch of sky/i }),
@@ -36,7 +36,7 @@ describe('landing', () => {
 
   it('opens a preset into the explorer and keeps the field in the URL', async () => {
     const user = userEvent.setup();
-    renderApp('/');
+    renderApp('/explorer');
 
     await user.click(await screen.findByRole('button', { name: /tutorial/i }));
 
@@ -51,7 +51,7 @@ describe('landing', () => {
 describe('explorer', () => {
   it('opens a candidate drawer and keeps the selection when the drawer closes', async () => {
     const user = userEvent.setup();
-    renderApp(`/?f=${TUTORIAL}`);
+    renderApp(`/explorer?f=${TUTORIAL}`);
 
     const list = await screen.findByRole('list', { name: /ranked candidates/i });
     const first = within(list).getAllByRole('button')[0];
@@ -77,7 +77,7 @@ describe('explorer', () => {
   });
 
   it('gates ranking controls when the server reports no model', async () => {
-    renderApp(`/?f=${TUTORIAL}`);
+    renderApp(`/explorer?f=${TUTORIAL}`);
 
     expect(await screen.findByTestId('queue-subtitle')).toHaveTextContent(
       /ranked by stack snr/i,

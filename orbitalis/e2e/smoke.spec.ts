@@ -11,7 +11,7 @@ async function expectNoBannedCopy(page: import('@playwright/test').Page) {
 }
 
 test('landing lists real-data presets and opens the explorer', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/explorer');
 
   await expect(page.getByRole('heading', { name: 'Choose a patch of sky' })).toBeVisible();
   for (const name of ['tutorial', 'barnards-star', 'epsilon-indi-b', 'wise-0855', 'rw-aur', 'r-dra']) {
@@ -30,8 +30,18 @@ test('landing lists real-data presets and opens the explorer', async ({ page }) 
   await expect(page.getByRole('button', { name: /ask the assistant/i })).toHaveCount(0);
 });
 
+test('cinematic landing opens the observer', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Skip' }).click();
+  await expect(page.getByRole('heading', { name: /see what/i })).toBeVisible();
+  await expectNoBannedCopy(page);
+  await page.getByRole('button', { name: 'Open the Explorer' }).click();
+  await expect(page).toHaveURL(/\/explorer\?ra=/);
+  await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+});
+
 test('explorer scrubber, queue and candidate drawer', async ({ page }) => {
-  await page.goto(`/?f=${TUTORIAL}`);
+  await page.goto(`/explorer?f=${TUTORIAL}`);
 
   const queue = page.getByRole('list', { name: 'Ranked candidates' });
   await expect(queue.getByRole('button').first()).toBeVisible();

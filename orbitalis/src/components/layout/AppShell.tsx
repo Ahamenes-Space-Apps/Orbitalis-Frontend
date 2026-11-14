@@ -75,7 +75,7 @@ export function AppShell() {
         transition={{ duration: 0.3, ease: 'easeOut' }}
         className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-line bg-field px-4 py-2.5 sm:px-6"
       >
-        <NavLink to={field ? { pathname: '/', search: location.search } : '/'} className="flex items-center gap-2.5 text-ink no-underline" aria-label="ORBITALIS home">
+        <NavLink to="/" className="flex items-center gap-2.5 text-ink no-underline" aria-label="ORBITALIS home">
           <span aria-hidden="true" className="relative size-5 rounded-full border-[1.5px] border-white">
             <span className="absolute -top-1 right-px size-[6px] rounded-full bg-amber" />
           </span>
@@ -83,7 +83,7 @@ export function AppShell() {
         </NavLink>
 
         <nav className="flex flex-wrap gap-0.5" aria-label="Main">
-          <NavItem to="/" end>
+          <NavItem to="/explorer" end>
             Explorer
           </NavItem>
           <NavItem to="/candidates">Candidates</NavItem>
