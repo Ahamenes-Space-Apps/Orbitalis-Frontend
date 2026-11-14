@@ -1,8 +1,13 @@
 # ORBITALIS web
 
-A time-aware sky explorer for repeated SPHEREx observations. Drag the time slider and stationary sources hold still while moving ones shift. Click a candidate to open a dossier with its motion, 102-band spectrum and evidence.
+A time-aware sky explorer for repeated SPHEREx observations. Scrub through frames and stationary sources hold still while moving ones shift. Candidates are always shown as **unconfirmed**; the app never claims a detection or a discovery.
 
-This is the frontend. It runs on its own: with no backend configured it serves a **deterministic synthetic field** (500 stationary sources, 20 variable, 10 moving, 1 planted high-interest candidate) from a mock API. Nothing in the demo data comes from SPHEREx.
+This is the frontend for the ORBITALIS API. It runs in two modes:
+
+- **Mock mode** (default). `VITE_API_URL` is unset, so the app serves `public/mock/bundle.json`: a checked-in snapshot generated from the backend's six demo presets. Everything is populated from that real bundle, no request leaves the browser, and a "Mock API" banner says so.
+- **Live mode.** `VITE_API_URL` points at the API root (including `/api/v1`). Field builds, jobs, overlays, light curves and validation records come from the backend.
+
+The API follows the envelope in the SDD: success is `{ data, meta }`, failure is `{ error: { code, message, detail } }`, and IDs are opaque strings.
 
 ## Run it
 
@@ -13,86 +18,84 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
+With a local backend:
+
+```bash
+# in the backend repository
+ORB_OFFLINE=1 uv run uvicorn orbitalis.main:app --port 8080
+
+# in this repository
+VITE_API_URL=http://localhost:8080/api/v1 npm run dev
+```
+
+The production API is `https://orbitalis-api-894548039245.me-central1.run.app/api/v1`. There is no authentication or client-side secret.
+
 Other commands:
 
 | Command | What it does |
 |---|---|
 | `npm run build` | Typecheck, then build to `dist/` |
 | `npm run preview` | Serve the build at http://localhost:4173 |
-| `npm test` | 46 unit and UI tests (Vitest, jsdom) |
+| `npm test` | Unit and UI tests (Vitest, jsdom) |
 | `npm run typecheck` | TypeScript only |
 | `npm run e2e` | Playwright browser tests (needs `npx playwright install chromium` once) |
 
-With Docker: `docker compose up --build`, then open http://localhost:3000.
+With Docker: `docker compose up --build`, then open http://localhost:3000. Pass `VITE_API_URL` as a build arg for live mode.
 
-## What to try
+## Screens
 
-1. **Explorer (`/`)**. Click *Epoch 1 / 2 / 3* or the play button. Moving candidates (amber rings) shift; the stars do not. Toggle *Trails*, the layer chips, and the motion exaggeration slider.
-2. **Select a candidate** in the queue or on the sky. The summary card shows its numbers.
-3. **Band strip.** Drag across the 102 colored ticks (or focus it and use the arrow keys). Candidates whose spectral anomaly overlaps your range get an *In band range* badge, and the range is outlined on every dossier spectrum.
-4. **Dossier (`/candidates/42`)**. Epoch cutouts drawn to scale, sky-plane motion plot, spectrum with flagged bands, evidence breakdown, a "why it was prioritized" text, and the known-object cross-match.
-5. **Candidates (`/candidates`)**. Move the four weight sliders and watch the ranking change. #042 stops being first when you put all the weight on motion, because its shift is small. Candidates that match a known object are multiplied by 0.7.
-6. **Methods and limits (`/methods`)**. What the tool cannot claim, and a live check of the planted object's rank.
-7. **Coordinate frame.** The header toggle switches the readout between Equatorial and Galactic.
+1. **Explorer (`/`)**. Choose one of six real-data presets or enter ICRS coordinates. The field streams frames via SSE, then a scrubber moves through time or wavelength. The candidate queue, sky view, overlay layers and frame scrubber share URL state.
+2. **Candidate drawer.** Select a candidate from the queue or map. It shows the shift-and-stack against the original frames, blink/filmstrip and motion views, the quick-look light curve (grouped by wavelength), the spectrum when extraction is available, model scores only when the server provides them, and the provenance text to copy. Closing the drawer keeps `sel` in the URL, so the same link reopens it.
+3. **Candidates (`/candidates`)**. Pick all compatible frames or an explicit subset, set a rate and position-angle range, choose grid density, and read the server's work estimate before running. Jobs poll to completion, can be cancelled, and reuse stored parameters when run again. Results export as CSV. Ranking controls appear only when `/capabilities` enables ranking.
+4. **Methods and limits (`/methods`)**. Real stack and flag policies, releases, model availability, capability reasons, validation experiments with recall/precision intervals and completeness charts, stored-parameter reruns, and the limits of what the tool can claim.
 
-### The sky view
+The assistant is not rendered while `/capabilities` reports `assistant.enabled=false`. No dead controls are shown for unavailable features.
 
-The explorer has two renderers, switchable in the top-left panel:
+## URL state
 
-- **Aladin Lite v3** (default). Loaded lazily. Our synthetic sources are drawn as a catalog on top. The real-sky backdrop is **off by default**, because the sources are synthetic and should not be read against real stars. It needs a browser with WebGL2 and a network connection.
-- **Simple.** A built-in SVG sky with pan (drag), zoom (wheel or buttons) and keyboard-accessible markers. It needs no network.
+Copied links reproduce the screen. The supported parameters are:
 
-If Aladin Lite cannot start, the app says so and switches to Simple automatically. You can force it with `/?renderer=svg`.
+`ra`, `dec`, `r`, `rel`, `f` (field id), `t` (frame ref), `sel` (candidate id), `view` (`simple` or `aladin`), `sys` (`eq` or `gal`), `exag` (motion exaggeration), and `layers` (comma-separated `moving`, `static`, `known`, `hypothesis`, `trails`).
+
+Streams, job progress and assistant state never go into the URL.
+
+## Data honesty
+
+- Candidates are unconfirmed. Confirmation requires independent follow-up outside this tool.
+- Light curves are quick-look aperture measurements: `method.calibrated` is false and the UI labels them as such.
+- Light-curve `x`, `y`, `ra` and `dec` are null unless the source was detected; `flux_mjy` and `upper_limit_mjy` are always present.
+- `false positive` is not used for candidates. Precision is only discussed inside experiments, against injected sources.
+- Model scores rank candidates for inspection; they are not calibrated probabilities.
+- Known-object items are points. Hypothesis items are regions with a `shape` and `contains_field` flag.
 
 ## Stack
 
-React 19, TypeScript, Vite, Tailwind CSS v4, shadcn-style components (Radix UI + class-variance-authority), TanStack Query, Zustand, React Router, Aladin Lite v3, uPlot (spectrum), Observable Plot (motion), Vitest, Testing Library, Playwright.
+React 19, TypeScript, Vite, Tailwind CSS v4, shadcn-style components (Radix UI + class-variance-authority), TanStack Query, Zustand, React Router, Aladin Lite v3 (lazy), uPlot, Observable Plot, Vitest, Testing Library, Playwright.
 
 ## Layout
 
 ```
 src/
-  data/        types (the API contract), synthetic field generator, mock API client, query hooks
-  lib/         coordinates, scoring, helpers
-  store/       Zustand UI state (epoch, selection, filters, weights, band range)
+  data/         API types, live/mock client, React Query hooks, SSE parsing
+  state/        URL state (source of truth for navigation)
+  store/        transient UI state (hover, playback, queue collapse)
+  lib/          coordinates, parsing, formatting, motion helpers
   components/
-    sky/       Aladin and SVG renderers, timeline, band strip, controls
-    charts/    SpectrumChart (uPlot), MotionPlot (Observable Plot), EpochCutouts
-    candidates/ queue and summary
-    ui/        button, badge, card, slider, switch, tabs
-  pages/       Explorer, Dossier, Candidates, Methods
-  test/        UI tests
-e2e/           Playwright tests
+    explorer/   field entry, sky view, queue, layers, scrubber, candidate drawer
+    charts/     light curve, spectrum, completeness
+    common/     mode banner, error copy, status chips, primitives
+    layout/     app shell and navigation
+    ui/         button, badge, card, slider, switch, tabs
+  pages/        Explorer, Candidates, Methods, Not found
+  test/         jsdom setup and UI tests
+e2e/            Playwright tests
 ```
 
-## Connecting a real backend
+`src/data/openapi.d.ts` is generated from `openapi.json`. Response bodies are generic in the spec, so `src/data/types.ts` is the hand-written response contract.
 
-Set `VITE_API_URL=/api` (copy `.env.example` to `.env.local`). The dev server proxies `/api` to `http://localhost:8080` (change it in `vite.config.ts`). The backend can be Spring Boot, Django, FastAPI or anything else that returns this JSON. The TypeScript types in `src/data/types.ts` are the contract.
+## Testing notes
 
-| Endpoint | Returns |
-|---|---|
-| `GET /api/field` | `FieldInfo`: id, name, `synthetic`, center `{ra, dec}`, `fovArcmin`, `pixelScaleArcsec`, `epochs[]`, counts |
-| `GET /api/sources?class=stationary` | `[{id, ra, dec, flux}]` |
-| `GET /api/candidates` | `CandidateSummary[]`: id, `cls` (`moving` or `variable`), `positions[]` (one `{ra, dec}` per epoch), displacement, flux change, `components {M,B,S,T}` in 0 to 1, `knownMatch`, `flaggedBands`, `truth` (null on real data) |
-| `GET /api/candidates/{id}` | `CandidateDetail`: the summary plus `spectrum[102]`, `medianSpectrum[102]`, `offsetsArcsec[]`, `cutout`, `crossMatches[]` |
-| `GET /api/candidates/{id}/explanation` | `{text, caveat, generatedBy}` |
-
-Notes for the backend:
-
-- Coordinates are ICRS degrees. `offsetsArcsec.dx` is ΔRA·cos(dec), east positive.
-- Scores are computed in the browser from `components` so the weight sliders re-rank instantly. The backend only supplies the four components.
-- The explanation endpoint is where the Claude API call belongs. Send it the candidate record only, and tell it to use no numbers that are not in the record. The mock in `src/data/explain.ts` follows the same rule.
-- If you use Spring Boot, a `float4[]` column for the 102-band arrays is simpler than Parquet, and `q3c` queries need native SQL.
-
-## What has and has not been tested
-
-Checked automatically here: TypeScript strict typecheck, 46 tests (coordinates, scoring, the synthetic field's counts and planted object, the mock API, and the UI flows on all four pages including the Aladin-failure fallback), and a production build.
-
-**Not checked:** real-browser rendering. The environment this was built in has no browser, so the Aladin Lite canvas, the uPlot and Observable Plot charts, and the visual layout have not been seen running, and the Playwright tests are written but have not been run. The Aladin calls were checked against the library's code, not against a live page. If something looks wrong in your browser, try `/?renderer=svg` first, then tell me what you see.
-
-## Known limits
-
-- All numbers come from the synthetic generator. The planted object, its spectrum and its score are made up to be found.
-- "Why it was prioritized" is a template in mock mode, not a model.
-- The band range and the *Flag for follow-up* and *Export report* buttons are interface only for now.
-- The galactic frame changes the readout and Aladin's grid. The Simple view always draws an equatorial grid.
+- `npm test` runs the data client, coordinate parsing, URL state and UI flows against the checked-in mock bundle. The setup shim serves `public/mock/*` from disk in jsdom.
+- `npm run e2e` runs the browser smoke tests against a production build. The tests cover presets, explorer scrubber/queue/drawer, candidate estimate/run/replay, methods validation and stale-field rebuild.
+- Playwright needs a Chromium download: `npx playwright install chromium`.
+- Candidate stacks are included for every candidate. A few candidate-frame cutouts are unavailable from the offline backend; the drawer shows a "not loaded on the server" placeholder rather than a broken image.

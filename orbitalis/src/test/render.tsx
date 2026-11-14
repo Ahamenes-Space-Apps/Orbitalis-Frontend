@@ -3,24 +3,12 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from '@/App';
 import { useUi } from '@/store/useUi';
-import { useAssistant } from '@/store/useAssistant';
 
 const initial = useUi.getState();
-const initialAssistant = useAssistant.getState();
 
-/** Fresh store, fresh query cache, and the built-in sky view (Aladin needs WebGL, which jsdom does not have). */
-export function renderApp(path = '/', renderer: 'svg' | 'auto' = 'svg') {
-  useUi.setState({ ...initial, renderer }, true);
-  useAssistant.setState(
-    {
-      ...initialAssistant,
-      open: false,
-      messages: [],
-      streamingId: null,
-      error: null,
-    },
-    true,
-  );
+/** Fresh store and query cache. Mock mode is the default in tests. */
+export function renderApp(path = '/') {
+  useUi.setState({ ...initial }, true);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   return render(
     <QueryClientProvider client={client}>

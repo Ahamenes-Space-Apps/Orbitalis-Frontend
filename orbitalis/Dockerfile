@@ -4,7 +4,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-# Leave empty for the mock API, or set to /api to talk to a backend behind the same host.
+# Leave empty for the checked-in mock bundle, or set the full API root
+# (for example /api/v1 behind the same host, or https://host/api/v1).
 ARG VITE_API_URL=
 ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build

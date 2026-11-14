@@ -9,7 +9,7 @@ services:
 
   # Add the backend here when it exists (Spring Boot, Django or FastAPI), then:
   #  - uncomment the /api proxy in nginx.conf
-  #  - build web with VITE_API_URL: "/api"
+  #  - build web with VITE_API_URL: "/api/v1"
   # api:
   #   build: ../orbitalis-api
   #   ports: ["8080:8080"]

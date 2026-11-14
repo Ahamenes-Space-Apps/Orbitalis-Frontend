@@ -1,53 +1,99 @@
 import { expect, test } from '@playwright/test';
 
-// These tests use the built-in sky view (?renderer=svg) so they do not depend on Aladin Lite's network tiles.
+const TUTORIAL = 'f_25faaae4bee9c18ab8c3ce82';
+const VALIDATION_JOB = 'j_c344fe2f3dc5878fa8b2f42f';
 
-test('explorer: queue, time slider and selection', async ({ page }) => {
-  await page.goto('/?renderer=svg');
-  const queue = page.getByRole('list', { name: 'Ranked candidates' });
-  await expect(queue.getByRole('button').first()).toContainText('#042');
+const BANNED = [/\bconfirmed\b/i, /\bdiscovery\b/i, /\bconfidence\b/i, /found a planet/i, /\bfalse positive\b/i];
 
-  await page.getByRole('button', { name: 'Show Epoch 3' }).click();
-  await expect(page.getByTestId('epoch-label')).toContainText('Epoch 3 of 3');
+async function expectNoBannedCopy(page: import('@playwright/test').Page) {
+  const text = await page.locator('body').innerText();
+  for (const pattern of BANNED) expect(text).not.toMatch(pattern);
+}
 
-  await queue.getByRole('button', { name: /#017/ }).click();
-  await expect(page.getByTestId('selected-summary')).toContainText('Candidate #017');
-});
+test('landing lists real-data presets and opens the explorer', async ({ page }) => {
+  await page.goto('/');
 
-test('dossier: charts render and the honesty banner is shown', async ({ page }) => {
-  await page.goto('/?renderer=svg');
-  await page.getByRole('link', { name: 'Open dossier' }).click();
-  await expect(page.getByRole('heading', { name: 'Candidate #042' })).toBeVisible();
-  await expect(page.getByText('warrants investigation')).toBeVisible();
-  await expect(page.locator('.uplot canvas').first()).toBeVisible();
-  await expect(page.locator('[aria-label^="Sky-plane track"] svg').first()).toBeVisible();
-  await expect(page.getByText(/Possible explanations include/)).toBeVisible();
-});
-
-test('candidates: moving a weight re-ranks the list', async ({ page }) => {
-  await page.goto('/candidates');
-  const rows = page.getByTestId('candidate-row');
-  await expect(rows).toHaveCount(31);
-  await expect(rows.first()).toContainText('#042');
-
-  // Keyboard: push the motion weight to its maximum and the others to zero.
-  for (const [name, key] of [
-    ['Weight for Motion significance', 'End'],
-    ['Weight for Brightness variation', 'Home'],
-    ['Weight for Spectral anomaly', 'Home'],
-    ['Weight for Temporal consistency', 'Home'],
-  ] as const) {
-    const thumb = page.getByRole('slider', { name });
-    await thumb.focus();
-    await thumb.press(key);
+  await expect(page.getByRole('heading', { name: 'Choose a patch of sky' })).toBeVisible();
+  for (const name of ['tutorial', 'barnards-star', 'epsilon-indi-b', 'wise-0855', 'rw-aur', 'r-dra']) {
+    await expect(page.getByRole('button', { name: new RegExp(name, 'i') })).toBeVisible();
   }
-  await expect(rows.first()).not.toContainText('#042');
-  await page.getByRole('button', { name: 'Reset' }).click();
-  await expect(rows.first()).toContainText('#042');
+  await expect(page.getByText(/Mock API · Demo data/)).toBeVisible();
+  await expectNoBannedCopy(page);
+
+  await page.getByRole('button', { name: /tutorial/i }).click();
+
+  await expect(page.getByTestId('field-chip')).toBeVisible();
+  await expect(page.getByText('5 frames · 10 candidates')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Frame scrubber' })).toBeVisible();
 });
 
-test('methods page shows limits', async ({ page }) => {
-  await page.goto('/methods');
-  await expect(page.getByText('A candidate is not a detection.')).toBeVisible();
-  await expect(page.getByTestId('planted-rank')).toContainText('ranks 1 of 31');
+test('explorer scrubber, queue and candidate drawer', async ({ page }) => {
+  await page.goto(`/?f=${TUTORIAL}`);
+
+  const queue = page.getByRole('list', { name: 'Ranked candidates' });
+  await expect(queue.getByRole('button').first()).toBeVisible();
+  await expect(page.getByTestId('queue-subtitle')).toContainText('Ranked by stack SNR');
+
+  await page.getByRole('button', { name: 'Next frame' }).click();
+  await expect(page.getByRole('button', { name: /Show frame 2 of 5/ })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+
+  const first = queue.getByRole('button').first();
+  await first.click();
+  await expect(page.getByRole('heading', { name: 'Stack versus originals' })).toBeVisible();
+  await expect(page.getByText('Unconfirmed').first()).toBeVisible();
+  await expect(page).toHaveURL(/sel=/);
+  await expectNoBannedCopy(page);
+
+  await page.getByRole('button', { name: 'Close candidate detail' }).click();
+  await expect(page.getByRole('heading', { name: 'Stack versus originals' })).toBeHidden();
+  await expect(page).toHaveURL(/sel=/);
+
+  // Selection survives closing: choosing the same row reopens the drawer.
+  await first.click();
+  await expect(page.getByRole('heading', { name: 'Stack versus originals' })).toBeVisible();
+});
+
+test('candidates estimate and replay a stored run', async ({ page }) => {
+  await page.goto(`/candidates?f=${TUTORIAL}`);
+
+  await expect(page.getByRole('heading', { name: 'Run a moving-object search' })).toBeVisible();
+  await expect(page.getByText('Within the work budget.')).toBeVisible({ timeout: 15_000 });
+
+  // Ranking is disabled by /capabilities, so no rank control is rendered.
+  await expect(page.getByLabel('Rank after search')).toHaveCount(0);
+  await expect(page.getByText(/ordered by stack SNR/).first()).toBeVisible();
+
+  await page.getByRole('button', { name: 'Run search' }).click();
+  await expect(page.getByText('Showing results from an earlier identical run.')).toBeVisible();
+  await expectNoBannedCopy(page);
+});
+
+test('candidates asks for a field when the URL has none', async ({ page }) => {
+  await page.goto('/candidates');
+
+  await expect(page.getByRole('heading', { name: 'Choose a field first' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /tutorial/i })).toBeVisible();
+  await expectNoBannedCopy(page);
+});
+
+test('methods uses real validation evidence and reruns stored settings', async ({ page }) => {
+  await page.goto(`/methods?f=${TUTORIAL}`);
+
+  await expect(page.getByRole('heading', { name: 'How the search works' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Validation' })).toBeVisible();
+  await expect(page.getByText(/not a calibrated probability/i).first()).toBeVisible();
+
+  await page.getByRole('button', { name: 'Run validation with these settings' }).click();
+  await expect(page.getByText(VALIDATION_JOB)).toBeVisible();
+  await expectNoBannedCopy(page);
+});
+
+test('a stale field id offers a rebuild from URL parameters', async ({ page }) => {
+  await page.goto(`/?f=f_missing&ra=156.09&dec=-41.64&r=0.1&rel=qr2`);
+
+  await expect(page.getByText("We can't find that item.")).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Rebuild this view' })).toBeVisible();
 });
