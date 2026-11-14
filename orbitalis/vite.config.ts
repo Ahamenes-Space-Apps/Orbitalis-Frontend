@@ -5,8 +5,11 @@ import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath, URL } from 'node:url';
 
 // Dev/preview target for `/api` when the client runs with VITE_API_URL=/api/v1.
-// Defaults to the local backend; point it at Cloud Run for live data.
-const apiTarget = process.env.ORB_API_PROXY_TARGET ?? 'http://localhost:8080';
+// Defaults to the production API; set ORB_API_PROXY_TARGET=http://localhost:8080
+// to work against a local backend instead.
+const apiTarget =
+  process.env.ORB_API_PROXY_TARGET ??
+  'https://orbitalis-api-894548039245.me-central1.run.app';
 
 // Cloud Run only allows configured origins. The browser talks to Vite
 // same-origin, so the proxy drops `Origin` before forwarding. Dev-only; no

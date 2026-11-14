@@ -18,25 +18,19 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-With a local backend:
+`npm run dev` runs in live mode against the production API. The dev server
+proxies `/api` to `ORB_API_PROXY_TARGET` (default
+`https://orbitalis-api-894548039245.me-central1.run.app`) and drops the browser
+`Origin` header, because the hosted API only allows configured origins.
+
+To use a local backend instead:
 
 ```bash
 # in the backend repository
 ORB_OFFLINE=1 uv run uvicorn orbitalis.main:app --port 8080
 
 # in this repository
-VITE_API_URL=/api/v1 npm run dev
-```
-
-The dev server proxies `/api` to `ORB_API_PROXY_TARGET` (default
-`http://localhost:8080`) and drops the browser `Origin` header, because the
-hosted API only allows configured origins. Live-capable local development is
-therefore:
-
-```bash
-VITE_API_URL=/api/v1 npm run dev                       # local backend
-ORB_API_PROXY_TARGET=https://orbitalis-api-894548039245.me-central1.run.app \
-  VITE_API_URL=/api/v1 npm run dev                     # production API
+ORB_API_PROXY_TARGET=http://localhost:8080 npm run dev
 ```
 
 `.env.development.local` (gitignored) can hold `VITE_API_URL=/api/v1` for the
