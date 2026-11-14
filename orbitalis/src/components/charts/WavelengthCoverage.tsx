@@ -15,6 +15,8 @@ interface WavelengthCoverageProps {
   selectedWavelength?: number | null;
   selection?: WavelengthRange | null;
   onSelectionChange?: (range: WavelengthRange | null) => void;
+  /** Shorter strip layout for the always-visible explorer bar. */
+  compact?: boolean;
   className?: string;
 }
 
@@ -35,6 +37,7 @@ export function WavelengthCoverage({
   selectedWavelength = null,
   selection = null,
   onSelectionChange,
+  compact = false,
   className,
 }: WavelengthCoverageProps) {
   const plotRef = useRef<HTMLDivElement>(null);
@@ -93,12 +96,12 @@ export function WavelengthCoverage({
   const interactive = Boolean(onSelectionChange);
 
   const width = 640;
-  const height = 112;
-  const pad = { top: 18, right: 12, bottom: 22, left: 12 };
+  const height = compact ? 72 : 112;
+  const pad = { top: compact ? 14 : 18, right: 12, bottom: compact ? 8 : 22, left: 12 };
   const plotWidth = width - pad.left - pad.right;
-  const histogramHeight = 42;
-  const sedBarHeight = 14;
-  const sedBaseline = pad.top + histogramHeight + 28;
+  const histogramHeight = compact ? 26 : 42;
+  const sedBarHeight = compact ? 8 : 14;
+  const sedBaseline = pad.top + histogramHeight + (compact ? 14 : 28);
   const sedTop = sedBaseline - sedBarHeight;
 
   const xScale = (value: number) => pad.left + ((value - min) / span) * plotWidth;
