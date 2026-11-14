@@ -47,7 +47,7 @@ function ToolCalls({ message }: { message: AssistantMessage }) {
       {message.toolCalls.map((call) => (
         <span
           key={call.name}
-          className="inline-flex items-center gap-1 border border-line bg-canvas px-1.5 py-0.5 text-[9px] text-haze"
+          className="inline-flex items-center gap-1 rounded-full border border-line-2 bg-panel px-2 py-1 text-[11px] text-haze"
         >
           <ScanSearch className="size-3" aria-hidden="true" />
           {call.label}
@@ -94,11 +94,12 @@ export function MessageList({
           <Sparkles className="size-6" aria-hidden="true" />
         </span>
         <div>
-          <p className="m-0 text-[12px] font-semibold text-ink">
+          <p className="m-0 text-[15px] font-semibold text-ink">
             Ask about this field
           </p>
-          <p className="m-0 mt-1 text-[10px] leading-relaxed text-haze">
-            Answers use the current selection and this field&apos;s stored results. Nothing is confirmed.
+          <p className="m-0 mt-1 text-[13px] leading-relaxed text-haze">
+            Answers use the current selection and this field&apos;s stored
+            results. Nothing is confirmed.
           </p>
         </div>
       </div>
@@ -106,7 +107,7 @@ export function MessageList({
   }
 
   return (
-    <div className="console-scroll flex flex-1 flex-col gap-3 overflow-y-auto px-3 py-3">
+    <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
       {messages.map((message) => {
         if (message.role === 'user') {
           return (
@@ -124,12 +125,12 @@ export function MessageList({
           message.id === streamingId;
 
         return (
-          <div key={message.id} className="flex gap-2">
+          <div key={message.id} className="flex gap-2.5">
             <span
               aria-hidden="true"
               className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border border-line-2 bg-panel text-accent"
             >
-              <Sparkles className="size-3" />
+              <Sparkles className="size-3.5" />
             </span>
 
             <div
