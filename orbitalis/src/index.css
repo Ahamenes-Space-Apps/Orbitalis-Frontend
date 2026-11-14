@@ -1,30 +1,85 @@
 @import "tailwindcss";
 @import "uplot/dist/uPlot.min.css";
 
-@theme {
-  --font-sans: "Hanken Grotesk Variable", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+/*
+ * Dark is the default. The `dark` class stays on <html> so the custom variant
+ * below can be used anywhere in the tree; `light` swaps the token values.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
 
-  --color-field: #080d18;
-  --color-bar: #0c1220;
-  --color-panel: #10182a;
-  --color-panel-2: #17223a;
+/*
+ * Four anchors: #0D0D0D, #1E466B, #67BAF4, #FAFAFA.
+ * Keep in sync with src/lib/palette.ts.
+ */
+:root,
+.dark {
+  color-scheme: dark;
 
-  --color-line: #263553;
-  --color-line-2: #3b4a69;
+  --t-field: #0d0d0d;
+  --t-bar: #0d0d0d;
+  --t-panel: #13171e;
+  --t-panel2: #19212b;
 
-  --color-ink: #e8eef8;
-  --color-mist: #aeb9cf;
-  --color-haze: #7f8ba5;
+  --t-line: #1e466b66;
+  --t-line2: #1e466b;
 
-  --color-amber: #f5b942;
-  --color-amber-soft: #ffd98a;
-  --color-cyan: #55d6e8;
-  --color-violet: #a78bfa;
-  --color-teal: #38d39f;
+  --t-ink: #fafafa;
+  --t-mist: #cbd5e1;
+  --t-haze: #94a3b8;
+  --t-slate: #64748b;
 
-  --color-slate: #667594;
-  --color-star: #cfe0ff;
+  --t-accent: #67baf4;
+  --t-accent-soft: #a9d8fa;
+  --t-accent2: #4a8cbd;
+  --t-star: #e3eef8;
+  --t-warn: #f59e0b;
+}
+
+.light {
+  color-scheme: light;
+
+  --t-field: #fafafa;
+  --t-bar: #fafafa;
+  --t-panel: #ffffff;
+  --t-panel2: #f1f5f9;
+
+  --t-line: #e2e8f0;
+  --t-line2: #cbd5e1;
+
+  --t-ink: #0d0d0d;
+  --t-mist: #334155;
+  --t-haze: #64748b;
+  --t-slate: #94a3b8;
+
+  --t-accent: #1e466b;
+  --t-accent-soft: #67baf4;
+  --t-accent2: #67baf4;
+  --t-star: #475569;
+  --t-warn: #b45309;
+}
+
+@theme inline {
+  --font-sans: "Plus Jakarta Sans Variable", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-field: var(--t-field);
+  --color-bar: var(--t-bar);
+  --color-panel: var(--t-panel);
+  --color-panel-2: var(--t-panel2);
+
+  --color-line: var(--t-line);
+  --color-line-2: var(--t-line2);
+
+  --color-ink: var(--t-ink);
+  --color-mist: var(--t-mist);
+  --color-haze: var(--t-haze);
+  --color-slate: var(--t-slate);
+
+  --color-accent: var(--t-accent);
+  --color-accent-soft: var(--t-accent-soft);
+  --color-accent-2: var(--t-accent2);
+  --color-star: var(--t-star);
+  --color-warn: var(--t-warn);
 }
 
 @layer base {
@@ -34,29 +89,54 @@
     height: 100%;
   }
 
+  html {
+    background: var(--t-field);
+  }
+
   body {
     margin: 0;
-    background: var(--color-field);
-    color: var(--color-ink);
+    background: var(--t-field);
+    color: var(--t-ink);
     font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Metrics must never jitter as digits change. */
+  .font-mono,
+  code,
+  kbd,
+  samp,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
   }
 
   a {
-    color: var(--color-amber);
+    color: var(--t-accent);
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-cyan);
+    outline: 2px solid var(--t-accent);
     outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--t-accent) 28%, transparent);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--t-line2) transparent;
   }
 }
 
 /* uPlot */
 .u-legend {
   font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--color-mist);
+  font-size: 11px;
+  color: var(--t-haze);
   text-align: left;
 }
 
@@ -65,20 +145,29 @@
 }
 
 .u-select {
-  background: rgba(85, 214, 232, 0.12);
+  background: color-mix(in srgb, var(--t-accent) 16%, transparent);
 }
 
-/* Shared visual utilities */
+/* Shared sky chrome */
 .sky-grid {
-  stroke: #34405c;
+  stroke: var(--t-line2);
   opacity: 0.7;
 }
 
 .sky-grid-major {
-  stroke: #52617d;
-  opacity: 0.8;
+  stroke: var(--t-accent);
+  opacity: 0.35;
 }
 
 .aladin-logo-container {
-  opacity: 0.75;
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

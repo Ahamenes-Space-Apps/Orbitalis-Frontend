@@ -6,7 +6,11 @@ import { cn } from '@/lib/utils';
 import { DURATION, EASE } from '@/lib/motion';
 import { Button } from '@/components/ui/button';
 
-const TICKS = Array.from({ length: BAND_COUNT }, (_, i) => `hsl(${(250 - i * 2.3).toFixed(0)}, 72%, 62%)`);
+const TICKS = Array.from({ length: BAND_COUNT }, (_, i) => {
+  const t = i / (BAND_COUNT - 1);
+  // Blue to cyan ramp: the strip reads as one spectrum without leaving the palette.
+  return `hsl(${(210 - t * 22).toFixed(0)}, 68%, ${(44 + t * 30).toFixed(0)}%)`;
+});
 
 /**
  * The 102 SPHEREx bands as a strip. Drag across it to select a band range, or focus it and use the arrow keys
@@ -64,7 +68,7 @@ export function BandStrip() {
         aria-label="Band range. Drag to select, or use the arrow keys."
         className={cn(
           'flex h-[26px] cursor-ew-resize touch-none gap-px rounded-sm transition-shadow duration-300',
-          bandRange && 'ring-1 ring-violet/50 ring-offset-2 ring-offset-bar',
+          bandRange && 'ring-1 ring-accent-2/60 ring-offset-2 ring-offset-bar',
         )}
         onPointerDown={(e) => {
           anchor.current = indexAt(e.clientX);

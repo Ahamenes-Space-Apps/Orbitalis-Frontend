@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { padId } from "@/lib/coords";
+import { palette } from "@/lib/palette";
 import { cn } from "@/lib/utils";
 import { DURATION, EASE, listItem } from "@/lib/motion";
 import { useRankedCandidates } from "@/data/hooks";
@@ -12,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { AnimatedBar } from "@/components/ui/motion";
 
 export const classColor = (cls: "moving" | "variable") =>
-  cls === "moving" ? "#F2B544" : "#A596FF";
+  cls === "moving" ? palette.accent : palette.accent2;
 
 export function CandidateQueue() {
   const { ranked, visible, isLoading, isError } = useRankedCandidates();
@@ -49,7 +50,7 @@ export function CandidateQueue() {
       >
         {!collapsed && (
           <div className="flex min-w-0 flex-1 items-baseline justify-between gap-2 px-1">
-            <h2 className="m-0 truncate text-lg font-semibold text-white">
+            <h2 className="m-0 truncate text-lg font-semibold text-ink">
               Candidate queue
             </h2>
 
@@ -66,7 +67,7 @@ export function CandidateQueue() {
             collapsed ? "Expand candidate queue" : "Collapse candidate queue"
           }
           aria-expanded={!collapsed}
-          className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-white transition-colors hover:bg-panel-2"
+          className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-ink transition-colors hover:bg-panel-2"
         >
           {collapsed ? (
             <ChevronRight className="size-4" aria-hidden="true" />
@@ -116,7 +117,7 @@ export function CandidateQueue() {
           )}
 
           {isError && (
-            <div role="alert" className="px-1 text-sm text-amber">
+            <div role="alert" className="px-1 text-sm text-ink">
               Could not load candidates.
             </div>
           )}
@@ -152,8 +153,8 @@ export function CandidateQueue() {
                     className={cn(
                       "flex w-full cursor-pointer items-center gap-3 border px-3.5 py-3 text-left text-inherit transition-colors",
                       selected
-                        ? "border-[#3b4c78] bg-[#17203a]"
-                        : "border-[#1b2438] bg-transparent hover:bg-panel",
+                        ? "border-line-2 bg-panel-2"
+                        : "border-line bg-transparent hover:bg-panel",
                     )}
                   >
                     <span className="w-4 font-mono text-xs text-haze">
@@ -162,7 +163,7 @@ export function CandidateQueue() {
 
                     <span className="flex min-w-0 flex-1 flex-col gap-2">
                       <span className="flex flex-wrap items-center gap-2">
-                        <span className="text-[15px] font-semibold text-white">
+                        <span className="text-[15px] font-semibold text-ink">
                           #{padId(candidate.id)}
                         </span>
 
@@ -184,7 +185,7 @@ export function CandidateQueue() {
 
                         {inBand && (
                           <Badge
-                            tone="violet"
+                            tone="secondary"
                             className="px-2 py-0.5 text-[11px]"
                           >
                             In band range
@@ -195,11 +196,11 @@ export function CandidateQueue() {
                       <AnimatedBar
                         value={candidate.score}
                         className="h-1 rounded-sm bg-line"
-                        barClassName="bg-white"
+                        barClassName="bg-ink"
                       />
                     </span>
 
-                    <span className="font-mono text-sm font-medium text-white">
+                    <span className="font-mono text-sm font-medium text-ink">
                       {candidate.score.toFixed(2)}
                     </span>
                   </button>
@@ -217,7 +218,7 @@ export function CandidateQueue() {
 
           <Link
             to="/candidates"
-            className="px-1 py-2 text-[13px] text-white no-underline hover:underline"
+            className="px-1 py-2 text-[13px] text-ink no-underline hover:underline"
           >
             View all {visible.length} candidates and adjust the weights
           </Link>

@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   cn(
-    'relative px-3.5 py-2.5 text-sm text-white no-underline transition-colors',
+    'relative px-3.5 py-2.5 text-sm text-ink no-underline transition-colors',
     isActive ? 'text-ink font-semibold' : 'text-haze hover:text-ink',
   );
 
@@ -65,12 +65,9 @@ export function AppShell() {
           className="flex items-center gap-3 text-ink no-underline"
           aria-label="ORBITALIS home"
         >
-          <span
-            aria-hidden="true"
-            className="relative size-6 rounded-full border-[1.5px] border-white"
-          >
-            <span className="absolute -top-1 right-px size-[7px] rounded-full bg-amber" />
-          </span>
+         
+             <img src="/image.png" alt="" aria-hidden="true" className="size-8 object-contain" />
+         
 
           <span className="text-[15px] font-semibold tracking-[0.26em]">
             ORBITALIS
@@ -128,7 +125,7 @@ export function AppShell() {
         >
           <motion.span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 w-1/2 rounded-[8px] bg-[#1b2540]"
+            className="pointer-events-none absolute inset-y-0 w-1/2 rounded-[8px] bg-panel-2"
             initial={false}
             animate={{ x: frame === 'equatorial' ? 0 : '100%' }}
             transition={{ type: 'spring', stiffness: 380, damping: 32 }}

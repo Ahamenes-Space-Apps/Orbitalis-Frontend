@@ -92,12 +92,12 @@ export function SkyView({
     {
       key: "moving",
       label: `Moving ${counts.moving}`,
-      swatch: "size-3 rounded-full border-[1.5px] border-amber",
+      swatch: "size-3 rounded-full border-[1.5px] border-accent",
     },
     {
       key: "variable",
       label: `Variable ${counts.variable}`,
-      swatch: "size-3 rounded-full border-[1.5px] border-dashed border-violet",
+      swatch: "size-3 rounded-full border-[1.5px] border-dashed border-accent-2",
     },
   ];
 
@@ -153,7 +153,7 @@ export function SkyView({
         data-active={layers[c.key]}
         aria-pressed={layers[c.key]}
         onClick={() => toggleLayer(c.key)}
-        className="data-[active=true]:border-white/70 data-[active=true]:bg-white/25 data-[active=true]:text-field"
+        className="data-[active=true]:border-ink/70 data-[active=true]:bg-ink/25 data-[active=true]:text-field"
       >
         <span aria-hidden="true" className={c.swatch} />
         {c.label}
@@ -165,7 +165,7 @@ export function SkyView({
       data-active={trails}
       aria-pressed={trails}
       onClick={() => setTrails(!trails)}
-      className="data-[active=true]:border-white/70 data-[active=true]:bg-white/25 data-[active=true]:text-field"
+      className="data-[active=true]:border-ink/70 data-[active=true]:bg-ink/25 data-[active=true]:text-field"
     >
       Trails
     </Button>
@@ -234,7 +234,7 @@ export function SkyView({
           {aladinFailure && (
             <div
               role="status"
-              className="max-w-md rounded-lg border border-amber/50 bg-bar/95 px-3 py-2 text-xs text-mist"
+              className="max-w-md rounded-lg border border-accent/40 bg-bar/95 px-3 py-2 text-xs text-mist"
             >
               Aladin Lite could not start ({aladinFailure}). Showing the
               built-in sky view instead.

@@ -30,11 +30,11 @@ export const useCandidate = (id: number | null) =>
     staleTime: 5 * 60_000,
   });
 
-export const useExplanation = (id: number | null) =>
+export const useExplanation = (id: number | null, enabled = true) =>
   useQuery({
     queryKey: keys.explanation(id ?? -1),
     queryFn: () => api.explanation(id as number),
-    enabled: id !== null && Number.isFinite(id),
+    enabled: enabled && id !== null && Number.isFinite(id),
     retry: false,
     staleTime: 5 * 60_000,
   });
@@ -54,7 +54,9 @@ export function useRankedCandidates(opts: { applyFilters?: boolean } = {}) {
 
   const visible = useMemo(() => {
     if (!applyFilters) return ranked;
-    return ranked.filter((c) => (classFilter === 'all' || c.cls === classFilter) && !(hideKnown && c.knownMatch));
+    const classMatch = (c: CandidateSummary) =>
+      classFilter === 'all' || classFilter === 'top' || c.cls === classFilter;
+    return ranked.filter((c) => classMatch(c) && !(hideKnown && c.knownMatch));
   }, [ranked, applyFilters, classFilter, hideKnown]);
 
   return { ...query, ranked, visible };

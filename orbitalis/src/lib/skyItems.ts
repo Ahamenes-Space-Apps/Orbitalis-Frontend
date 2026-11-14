@@ -1,4 +1,5 @@
 import type { SkyPos } from '@/lib/coords';
+import { palette } from '@/lib/palette';
 import type { CandidateSummary, EpochId, StationarySource } from '@/data/types';
 import type { LayerVisibility } from '@/store/useUi';
 
@@ -69,8 +70,8 @@ export function buildSkyItems(a: BuildSkyArgs): SkyItem[] {
 }
 
 export const KIND_COLOR: Record<SkyItemKind, string> = {
-  star: '#CFE0FF',
-  moving: '#F2B544',
-  variable: '#A596FF',
-  ghost: '#F2B544',
+  star: palette.star,
+  moving: palette.accent,
+  variable: palette.accent2,
+  ghost: palette.accent,
 };

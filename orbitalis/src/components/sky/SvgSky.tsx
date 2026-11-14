@@ -1,6 +1,7 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { offsetToSky, skyToOffset } from '@/lib/coords';
+import { sky } from '@/lib/palette';
 import { KIND_COLOR, type SkyItem } from '@/lib/skyItems';
 import { DURATION, EASE, springSoft } from '@/lib/motion';
 import type { SkyRendererProps } from './types';
@@ -124,7 +125,7 @@ export function SvgSky({ field, items, onSelect, ref }: SkyRendererProps) {
     <div
       ref={wrapRef}
       className="absolute inset-0 touch-none overflow-hidden"
-      style={{ background: 'radial-gradient(ellipse at 42% 38%, #131c34 0%, #0a0e17 72%)', cursor: drag.current ? 'grabbing' : 'grab' }}
+      style={{ background: sky.backdrop, cursor: drag.current ? 'grabbing' : 'grab' }}
       data-testid="sky-svg"
     >
       <svg
@@ -154,9 +155,9 @@ export function SvgSky({ field, items, onSelect, ref }: SkyRendererProps) {
         <g aria-hidden="true">
           {gridLines.map((l) => (
             <g key={l.key}>
-              <line x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="rgba(120,140,190,0.12)" />
+              <line x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={sky.grid} />
               {l.label && (
-                <text x={l.lx} y={l.ly} fill="#6e7a96" fontSize="11" fontFamily="var(--font-mono)">
+                <text x={l.lx} y={l.ly} fill={sky.gridLabel} fontSize="11" fontFamily="var(--font-mono)">
                   {l.label}
                 </text>
               )}
@@ -255,8 +256,8 @@ export function SvgSky({ field, items, onSelect, ref }: SkyRendererProps) {
         </AnimatePresence>
 
         <g aria-hidden="true" transform={`translate(20, ${size.h - 172})`}>
-          <path d={`M0 0 v6 h${barArcsec * scale} v-6`} fill="none" stroke="#8a94ab" strokeWidth="1.5" />
-          <text x="0" y="22" fill="#8a94ab" fontSize="11" fontFamily="var(--font-mono)">
+          <path d={`M0 0 v6 h${barArcsec * scale} v-6`} fill="none" stroke={sky.scaleBar} strokeWidth="1.5" />
+          <text x="0" y="22" fill={sky.scaleBar} fontSize="11" fontFamily="var(--font-mono)">
             {formatScale(barArcsec)} · ≈ {Math.round(barArcsec / field.pixelScaleArcsec)} SPHEREx pixels
           </text>
         </g>

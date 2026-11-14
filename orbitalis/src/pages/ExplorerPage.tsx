@@ -33,7 +33,7 @@ export function ExplorerPage() {
 
       <main className="relative min-h-[780px] min-w-0 flex-[999_1_560px] overflow-hidden" aria-label="Sky explorer">
         {failed && (
-          <div role="alert" className="absolute inset-0 grid place-items-center p-8 text-center text-sm text-amber">
+          <div role="alert" className="absolute inset-0 grid place-items-center p-8 text-center text-sm text-ink">
             The sky data could not be loaded. If you set VITE_API_URL, check that the backend is running.
           </div>
         )}
