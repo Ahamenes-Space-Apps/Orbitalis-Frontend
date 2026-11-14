@@ -5,7 +5,15 @@ import { cn } from '@/lib/utils';
 export const Tabs = TabsPrimitive.Root;
 
 export function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.List>) {
-  return <TabsPrimitive.List className={cn('flex flex-wrap gap-2', className)} {...props} />;
+  return (
+    <TabsPrimitive.List
+      className={cn(
+        'flex flex-nowrap overflow-x-auto rounded-sm border border-line-2 bg-panel-2 p-px',
+        className,
+      )}
+      {...props}
+    />
+  );
 }
 
 export function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Trigger>) {

@@ -1,9 +1,7 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { offsetToSky, skyToOffset } from '@/lib/coords';
 import { sky } from '@/lib/palette';
 import { KIND_COLOR, type SkyItem } from '@/lib/skyItems';
-import { DURATION, EASE, springSoft } from '@/lib/motion';
 import type { SkyRendererProps } from './types';
 
 const SCALE_BAR_CHOICES = [30, 60, 120, 300, 600];
@@ -29,13 +27,19 @@ function shortRa(raDeg: number): string {
  * Built-in sky view: plain SVG on a tangent-plane projection with pan and zoom.
  * It needs no network, so it is the fallback when Aladin Lite cannot load, and it is what the tests render.
  */
-export function SvgSky({ field, items, onSelect, ref }: SkyRendererProps) {
+export function SvgSky({
+  field,
+  items,
+  onSelect,
+  showGrid = true,
+  showConstellations = true,
+  ref,
+}: SkyRendererProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 900, h: 640 });
   const [zoom, setZoom] = useState(1);
   const [view, setView] = useState({ x: 0, y: 0 });
   const drag = useRef<{ x: number; y: number } | null>(null);
-  const reduce = useReducedMotion();
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -51,7 +55,6 @@ export function SvgSky({ field, items, onSelect, ref }: SkyRendererProps) {
     return () => ro.disconnect();
   }, []);
 
-  // Wheel zoom needs a non-passive listener so the page does not scroll underneath.
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
@@ -72,7 +75,11 @@ export function SvgSky({ field, items, onSelect, ref }: SkyRendererProps) {
       zoomIn: () => setZoom((z) => Math.min(40, z * 1.4)),
       zoomOut: () => setZoom((z) => Math.max(0.5, z / 1.4)),
       centerOn: (pos) => {
-        if (!pos) return setView({ x: 0, y: 0 });
+        if (!pos) {
+          setView({ x: 0, y: 0 });
+          setZoom(1);
+          return;
+        }
         const o = skyToOffset(field.center, pos);
         setView({ x: o.dx, y: o.dy });
       },
@@ -80,26 +87,42 @@ export function SvgSky({ field, items, onSelect, ref }: SkyRendererProps) {
     [field.center],
   );
 
+  const screenX = (dx: number) => size.w / 2 - (dx - view.x) * scale;
+  const screenY = (dy: number) => size.h / 2 - (dy - view.y) * scale;
+
   const project = (ra: number, dec: number) => {
     const o = skyToOffset(field.center, { ra, dec });
-    // East is left, north is up.
-    return { x: size.w / 2 - (o.dx - view.x) * scale, y: size.h / 2 - (o.dy - view.y) * scale };
+    return { x: screenX(o.dx), y: screenY(o.dy) };
   };
 
   const projected = useMemo(
-    () => items.map((it) => ({ it, ...project(it.ra, it.dec) })),
+    () =>
+      items.map((it) => {
+        const p = project(it.ra, it.dec);
+        const end = it.ra2 !== undefined && it.dec2 !== undefined ? project(it.ra2, it.dec2) : null;
+        return { it, ...p, end };
+      }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [items, size, scale, view, field.center],
   );
 
   const gridLines = useMemo(() => {
-    const lines: { key: string; x1: number; y1: number; x2: number; y2: number; label?: string; lx?: number; ly?: number }[] = [];
-    for (let k = -4; k <= 4; k++) {
-      const arc = k * 150;
-      const vx = size.w / 2 - (arc - view.x) * scale;
-      const hy = size.h / 2 - (arc - view.y) * scale;
+    const lines: {
+      key: string;
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      label?: string;
+      lx?: number;
+      ly?: number;
+    }[] = [];
+    for (let k = -6; k <= 6; k++) {
+      const arc = k * 100;
+      const vx = screenX(arc);
+      const hy = screenY(arc);
       const ra = offsetToSky(field.center, arc, 0).ra;
-      lines.push({ key: `v${k}`, x1: vx, y1: 0, x2: vx, y2: size.h, label: shortRa(ra), lx: vx + 6, ly: 16 });
+      lines.push({ key: `v${k}`, x1: vx, y1: 0, x2: vx, y2: size.h, label: shortRa(ra), lx: vx + 5, ly: 14 });
       lines.push({
         key: `h${k}`,
         x1: 0,
@@ -107,17 +130,28 @@ export function SvgSky({ field, items, onSelect, ref }: SkyRendererProps) {
         x2: size.w,
         y2: hy,
         label: `${(field.center.dec + arc / 3600).toFixed(2)}°`,
-        lx: 8,
-        ly: hy - 6,
+        lx: 7,
+        ly: hy - 5,
       });
     }
     return lines;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [size, scale, view, field.center]);
 
-  const barArcsec = SCALE_BAR_CHOICES.find((a) => a * scale >= 70) ?? SCALE_BAR_CHOICES[SCALE_BAR_CHOICES.length - 1];
+  const constellationLines = useMemo(() => {
+    return CONSTELLATIONS.map((c) => ({
+      name: c.name,
+      points: c.points.map((p) => `${screenX(p.dx)},${screenY(p.dy)}`).join(' '),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [size, scale, view]);
+
+  const barArcsec =
+    SCALE_BAR_CHOICES.find((a) => a * scale >= 70) ?? SCALE_BAR_CHOICES[SCALE_BAR_CHOICES.length - 1];
 
   const ordered = useMemo(() => {
-    const rank = (i: SkyItem) => (i.kind === 'star' ? 0 : i.kind === 'ghost' ? 1 : i.selected ? 3 : 2);
+    const rank = (i: SkyItem) =>
+      i.kind === 'star' ? 0 : i.kind === 'ghost' ? 1 : i.kind === 'vector' ? 2 : i.selected ? 4 : 3;
     return [...projected].sort((a, b) => rank(a.it) - rank(b.it));
   }, [projected]);
 
@@ -165,95 +199,114 @@ export function SvgSky({ field, items, onSelect, ref }: SkyRendererProps) {
           ))}
         </g>
 
-        <AnimatePresence initial={false}>
-          {ordered.map(({ it, x, y }) => {
-            if (x < -40 || y < -40 || x > size.w + 40 || y > size.h + 40) return null;
-            if (it.kind === 'star') {
-              const h = hashOf(it.key);
-              const r = 1 + (h % 4) * 0.45;
-              return (
-                <circle
-                  key={it.key}
-                  cx={x}
-                  cy={y}
-                  r={r}
-                  fill={KIND_COLOR.star}
-                  opacity={0.4 + ((h >> 3) % 5) * 0.12}
-                  aria-hidden="true"
-                />
-              );
-            }
-            if (it.kind === 'ghost') {
-              return (
-                <motion.circle
-                  key={it.key}
-                  r={3.5}
-                  fill={KIND_COLOR.ghost}
-                  initial={{ opacity: 0, cx: x, cy: y }}
-                  animate={{ opacity: it.alpha ?? 0.4, cx: x, cy: y }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: DURATION.base, ease: EASE }}
-                  aria-hidden="true"
-                />
-              );
-            }
-            const color = KIND_COLOR[it.kind];
-            const r = it.selected ? 17 : 12;
-            const label = it.label ?? '';
-            return (
-              <motion.g
-                key={it.key}
-                data-cid={it.cid}
-                role="button"
-                tabIndex={0}
-                aria-label={`Candidate ${label}, ${it.kind}${it.selected ? ', selected' : ''}`}
-                aria-pressed={it.selected ? true : false}
-                initial={false}
-                animate={{ x, y }}
-                transition={springSoft}
-                style={{ cursor: 'pointer' }}
-                onClick={() => it.cid !== undefined && onSelect(it.cid)}
-                onKeyDown={(e) => {
-                  if ((e.key === 'Enter' || e.key === ' ') && it.cid !== undefined) {
-                    e.preventDefault();
-                    onSelect(it.cid);
-                  }
-                }}
+        {showConstellations && (
+          <g aria-hidden="true">
+            {constellationLines.map((c) => (
+              <polyline
+                key={c.name}
+                points={c.points}
+                fill="none"
+                stroke="rgba(148,163,184,0.28)"
+                strokeWidth="1"
+                strokeDasharray="2 4"
               >
-                <circle r={22} fill="transparent" />
-                {it.selected && !reduce && (
-                  <motion.circle
-                    r={r + 6}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth={1}
-                    initial={{ opacity: 0.25 }}
-                    animate={{ r: [r + 5, r + 11, r + 5], opacity: [0.28, 0.04, 0.28] }}
-                    transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
-                  />
-                )}
-                {it.selected && <circle r={r + 7} fill={color} opacity={0.14} />}
-                <circle
-                  r={r}
-                  fill="none"
-                  stroke={color}
-                  strokeWidth={it.selected ? 2 : 1.5}
-                  strokeDasharray={it.kind === 'variable' ? '4 3' : undefined}
-                  style={it.selected ? { filter: `drop-shadow(0 0 6px ${color})` } : undefined}
+                <title>{c.name}</title>
+              </polyline>
+            ))}
+          </g>
+        )}
+
+        {ordered.map(({ it, x, y, end }) => {
+          if (it.kind === 'vector' && end) {
+            return (
+              <g key={it.key} aria-hidden="true">
+                <line
+                  x1={x}
+                  y1={y}
+                  x2={end.x}
+                  y2={end.y}
+                  stroke={it.selected ? '#67baf4' : '#f59e0b'}
+                  strokeWidth={it.selected ? 1.6 : 1}
+                  strokeDasharray="4 3"
+                  opacity={it.alpha ?? 0.8}
                 />
-                <text
-                  x={r + 6}
-                  y={4}
-                  fill={color}
-                  fontSize="12"
-                  fontFamily="var(--font-mono)"
-                >
-                  {label}
-                </text>
-              </motion.g>
+                <circle cx={x} cy={y} r={2} fill="#f59e0b" opacity={0.8} />
+              </g>
             );
-          })}
-        </AnimatePresence>
+          }
+
+          if (x < -40 || y < -40 || x > size.w + 40 || y > size.h + 40) return null;
+
+          if (it.kind === 'star') {
+            const h = hashOf(it.key);
+            const r = 0.8 + (h % 4) * 0.4;
+            return (
+              <g key={it.key} aria-hidden="true">
+                <circle cx={x} cy={y} r={r} fill={KIND_COLOR.star} opacity={it.alpha ?? 0.55} />
+                {it.label && (
+                  <text x={x + 5} y={y + 3} fill="rgba(148,163,184,0.6)" fontSize="8" fontFamily="var(--font-mono)">
+                    {it.label}
+                  </text>
+                )}
+              </g>
+            );
+          }
+
+          if (it.kind === 'ghost') {
+            return (
+              <circle
+                key={it.key}
+                cx={x}
+                cy={y}
+                r={3}
+                fill="none"
+                stroke={KIND_COLOR.ghost}
+                strokeWidth="1"
+                opacity={it.alpha ?? 0.4}
+                aria-hidden="true"
+              />
+            );
+          }
+
+          const color = KIND_COLOR[it.kind];
+          const r = it.selected ? 10 : 7;
+          const label = it.label ?? '';
+          return (
+            <g
+              key={it.key}
+              data-cid={it.cid}
+              role="button"
+              tabIndex={0}
+              aria-label={`Candidate ${label}, ${it.kind}${it.selected ? ', selected' : ''}`}
+              aria-pressed={it.selected ? true : false}
+              style={{ cursor: 'pointer' }}
+              onClick={() => it.cid !== undefined && onSelect(it.cid)}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ' ') && it.cid !== undefined) {
+                  e.preventDefault();
+                  onSelect(it.cid);
+                }
+              }}
+            >
+              <circle cx={x} cy={y} r={18} fill="transparent" />
+              {it.selected && <circle cx={x} cy={y} r={r + 6} fill={color} opacity={0.12} />}
+              <circle
+                cx={x}
+                cy={y}
+                r={r}
+                fill="none"
+                stroke={color}
+                strokeWidth={it.selected ? 1.8 : 1.2}
+                strokeDasharray={it.kind === 'variable' ? '3 3' : undefined}
+                opacity={it.alpha ?? 1}
+              />
+              <circle cx={x} cy={y} r={1.4} fill={color} opacity={it.alpha ?? 1} />
+              <text x={x + r + 5} y={y + 3} fill={color} fontSize="10" fontFamily="var(--font-mono)" opacity={it.alpha ?? 1}>
+                {label}
+              </text>
+            </g>
+          );
+        })}
 
         <g aria-hidden="true" transform={`translate(20, ${size.h - 172})`}>
           <path d={`M0 0 v6 h${barArcsec * scale} v-6`} fill="none" stroke={sky.scaleBar} strokeWidth="1.5" />

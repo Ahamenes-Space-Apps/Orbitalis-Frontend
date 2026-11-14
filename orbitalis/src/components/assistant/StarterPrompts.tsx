@@ -13,12 +13,10 @@ export function StarterPrompts({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-2" aria-label="Starter questions">
-      <span className="text-[11px] tracking-widest text-haze uppercase">
-        Try asking
-      </span>
+    <div className="flex flex-col gap-1.5" aria-label="Starter questions">
+      <span className="text-[9px] tracking-[0.12em] text-haze uppercase">Try asking</span>
 
-      <div className="grid gap-2">
+      <div className="grid gap-1">
         {prompts.map((item) => (
           <button
             key={item.prompt}

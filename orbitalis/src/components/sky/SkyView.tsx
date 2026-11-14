@@ -16,13 +16,19 @@ import { TimelinePanel } from "./TimelinePanel";
 import type { SkyHandle } from "./types";
 import { BandStrip } from "./BandStrip";
 
-// Aladin Lite is big, so it is only fetched when the sky view is shown.
-const AladinSky = lazy(() =>
-  import("./AladinSky").then((m) => ({ default: m.AladinSky })),
-);
+const AladinSky = lazy(() => import('./AladinSky').then((m) => ({ default: m.AladinSky })));
 
 const iconBtn =
-  "flex size-11 cursor-pointer items-center justify-center rounded-[10px] border border-line-2 bg-bar/90 text-ink hover:bg-panel-2";
+  'grid size-8 cursor-pointer place-items-center border border-[#1e466b] bg-[#0d0d0d]/95 text-[#94a3b8] transition-colors hover:border-[#67baf4] hover:text-[#fafafa]';
+
+function HudRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline gap-2 whitespace-nowrap">
+      <span className="w-11 shrink-0 text-[8px] uppercase tracking-[0.12em] text-[#64748b]">{label}</span>
+      <span className="font-mono text-[10px] tabular-nums text-[#fafafa]">{value}</span>
+    </div>
+  );
+}
 
 export function SkyView({
   field,
@@ -39,15 +45,12 @@ export function SkyView({
   const selectedId = useUi((s) => s.selectedId);
   const layers = useUi((s) => s.layers);
   const renderer = useUi((s) => s.renderer);
-  const backdrop = useUi((s) => s.backdrop);
-  const {
-    select,
-    setTrails,
-    setMotionGain,
-    toggleLayer,
-    setRenderer,
-    setBackdrop,
-  } = useUi.getState();
+  const tempMode = useUi((s) => s.tempMode);
+  const showGrid = useUi((s) => s.showGrid);
+  const showConstellations = useUi((s) => s.showConstellations);
+  const showAnchorStars = useUi((s) => s.showAnchorStars);
+  const dossierOpen = useUi((s) => s.dossierOpen);
+  const { select, toggleDossier, setRenderer } = useUi.getState();
 
   const [aladinFailure, setAladinFailure] = useState<string | null>(null);
   const handle = useRef<SkyHandle>(null);
@@ -62,15 +65,14 @@ export function SkyView({
         trails,
         selectedId,
         layers,
+        tempMode,
+        showAnchorStars,
       }),
-    [stationary, candidates, epoch, gain, trails, selectedId, layers],
+    [stationary, candidates, epoch, gain, trails, selectedId, layers, tempMode, showAnchorStars],
   );
 
-  const useAladin = renderer !== "svg" && aladinFailure === null;
-  const onFailed = useCallback(
-    (reason: string) => setAladinFailure(reason),
-    [],
-  );
+  const useAladin = renderer !== 'svg' && aladinFailure === null;
+  const onFailed = useCallback((reason: string) => setAladinFailure(reason), []);
   const onSelect = useCallback((id: number) => select(id), [select]);
 
   const counts = {
@@ -102,16 +104,16 @@ export function SkyView({
   ];
 
   const selected = candidates.find((c) => c.id === selectedId) ?? null;
+  const current = epochForField(field, epoch);
+  const pos = selected ? epochPosition(selected.positions, epoch) : field.center;
+  const mjd = epochMjd(field, epoch);
+  const dm = selected ? deltaMagAt(epoch, selected) : 0;
 
   return (
     <div className="absolute inset-0">
       {useAladin ? (
         <Suspense
-          fallback={
-            <div className="absolute inset-0 grid place-items-center text-sm text-haze">
-              Loading Aladin Lite…
-            </div>
-          }
+          fallback={<div className="absolute inset-0 grid place-items-center text-[11px] text-haze">Loading WebGL sky…</div>}
         >
           <AladinSky
             key="aladin"
@@ -119,6 +121,8 @@ export function SkyView({
             items={items}
             onSelect={onSelect}
             onFailed={onFailed}
+            showGrid={showGrid}
+            showConstellations={showConstellations}
             ref={handle}
           />
         </Suspense>
@@ -128,6 +132,8 @@ export function SkyView({
           field={field}
           items={items}
           onSelect={onSelect}
+          showGrid={showGrid}
+          showConstellations={showConstellations}
           ref={handle}
         />
       )}
@@ -190,46 +196,15 @@ export function SkyView({
                 onValueChange={(v) => setMotionGain(v[0])}
               />
             </span>
+            <span className="font-mono text-[9px] tabular-nums text-[#94a3b8]">{current?.offsetLabel}</span>
           </div>
-          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-line-2 bg-bar/90 px-3 py-1.5 text-xs text-mist">
-            <span id="renderer-label">Sky view</span>
-            <div
-              className="flex overflow-hidden rounded-[10px] border border-line-2"
-              role="group"
-              aria-labelledby="renderer-label"
-            >
-              <Button
-                variant="segment"
-                size="sm"
-                data-active={useAladin}
-                aria-pressed={useAladin}
-                onClick={() => {
-                  setAladinFailure(null);
-                  setRenderer("aladin");
-                }}
-              >
-                Aladin Lite
-              </Button>
-              <Button
-                variant="segment"
-                size="sm"
-                data-active={!useAladin}
-                aria-pressed={!useAladin}
-                onClick={() => setRenderer("svg")}
-              >
-                Simple
-              </Button>
-            </div>
-            {useAladin && (
-              <label className="flex items-center gap-2">
-                <Switch
-                  checked={backdrop}
-                  onCheckedChange={setBackdrop}
-                  aria-label="Show real sky behind the synthetic sources"
-                />
-                Real sky behind
-              </label>
-            )}
+          <div className="flex flex-col gap-1">
+            <HudRow label="MJD" value={formatMjd(mjd)} />
+            <HudRow label="UTC" value={formatUtcDate(mjdToDate(mjd))} />
+            <HudRow label="Target" value={selected ? `#${padId(selected.id)}` : 'FIELD'} />
+            <HudRow label="RA" value={formatRa(pos.ra)} />
+            <HudRow label="Dec" value={formatDec(pos.dec)} />
+            <HudRow label="Δm" value={selected ? formatDeltaMag(dm) : '—'} />
           </div>
           {aladinFailure && (
             <div
@@ -242,48 +217,68 @@ export function SkyView({
           )}
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, x: 8 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, ease: 'easeOut', delay: 0.05 }}
-          className="pointer-events-auto flex flex-col gap-2"
+      <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+        <button
+          type="button"
+          onClick={toggleDossier}
+          className="flex h-8 cursor-pointer items-center gap-1.5 border border-[#1e466b] bg-[#0d0d0d]/95 px-2.5 text-[10px] font-medium text-[#fafafa] transition-colors hover:border-[#67baf4]"
         >
-          <motion.button
-            type="button"
-            aria-label="Zoom in"
-            className={iconBtn}
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.94 }}
-            onClick={() => handle.current?.zoomIn()}
-          >
-            <Plus className="size-[18px]" aria-hidden="true" />
-          </motion.button>
-          <motion.button
-            type="button"
-            aria-label="Zoom out"
-            className={iconBtn}
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.94 }}
-            onClick={() => handle.current?.zoomOut()}
-          >
-            <Minus className="size-[18px]" aria-hidden="true" />
-          </motion.button>
-          <motion.button
+          {dossierOpen ? <PanelRightClose className="size-3.5" aria-hidden="true" /> : <PanelRightOpen className="size-3.5" aria-hidden="true" />}
+          {dossierOpen ? 'Hide Dossier' : 'Inspect Dossier'}
+        </button>
+
+        <div className="flex flex-col gap-1">
+          <button type="button" aria-label="Zoom in" className={iconBtn} onClick={() => handle.current?.zoomIn()}>
+            <Plus className="size-4" aria-hidden="true" />
+          </button>
+          <button type="button" aria-label="Zoom out" className={iconBtn} onClick={() => handle.current?.zoomOut()}>
+            <Minus className="size-4" aria-hidden="true" />
+          </button>
+          <button
             type="button"
             aria-label="Center on selected candidate"
             className={iconBtn}
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.94 }}
-            onClick={() =>
-              handle.current?.centerOn(selected ? selected.positions[0] : null)
-            }
+            onClick={() => handle.current?.centerOn(selected ? selected.positions[0] : null)}
           >
-            <Crosshair className="size-[18px]" aria-hidden="true" />
-          </motion.button>
-        </motion.div>
+            <Crosshair className="size-4" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="flex border border-[#1e466b] bg-[#0d0d0d]/95" role="group" aria-label="Sky renderer">
+          <button
+            type="button"
+            onClick={() => {
+              setAladinFailure(null);
+              setRenderer('aladin');
+            }}
+            aria-pressed={useAladin}
+            className={`cursor-pointer px-2 py-1 text-[9px] ${useAladin ? 'bg-[#1e466b] text-[#fafafa]' : 'text-[#94a3b8] hover:text-[#fafafa]'}`}
+          >
+            WebGL
+          </button>
+          <button
+            type="button"
+            onClick={() => setRenderer('svg')}
+            aria-pressed={!useAladin}
+            className={`cursor-pointer px-2 py-1 text-[9px] ${!useAladin ? 'bg-[#1e466b] text-[#fafafa]' : 'text-[#94a3b8] hover:text-[#fafafa]'}`}
+          >
+            SVG
+          </button>
+        </div>
       </div>
 
-      <TimelinePanel field={field} />
+      <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 justify-center">
+        <EpochDock field={field} onResetView={() => handle.current?.centerOn(null)} />
+      </div>
+
+      {aladinFailure && (
+        <div
+          role="status"
+          className="absolute right-3 bottom-3 z-10 max-w-[260px] border border-[#1e466b] bg-[#0d0d0d]/95 px-2 py-1.5 text-[9px] leading-relaxed text-[#94a3b8]"
+        >
+          WebGL sky unavailable ({aladinFailure}). Showing the SVG renderer.
+        </div>
+      )}
     </div>
   );
 }

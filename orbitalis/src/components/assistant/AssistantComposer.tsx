@@ -45,7 +45,7 @@ export function AssistantComposer({
       />
 
       <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1 text-[11px] text-haze">
+        <span className="flex items-center gap-1 text-[9px] text-haze">
           <CornerDownLeft className="size-3" aria-hidden="true" />
           Enter to send · Shift + Enter for a new line
         </span>

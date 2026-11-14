@@ -10,9 +10,9 @@ const badgeVariants = cva('inline-flex items-center px-3 py-1 text-[13px]', {
       secondary: 'border-accent-2 bg-accent-2/12 font-semibold text-accent-2',
       quiet: 'border-line text-haze',
     },
+    defaultVariants: { tone: 'neutral' },
   },
-  defaultVariants: { tone: 'neutral' },
-});
+);
 
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLSpanElement>,

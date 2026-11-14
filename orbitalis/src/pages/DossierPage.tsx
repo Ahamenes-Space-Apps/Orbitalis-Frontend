@@ -101,11 +101,8 @@ function Stat({
 export function DossierPage() {
   const params = useParams();
   const id = Number(params.id);
-  const valid = Number.isInteger(id);
-
+  const valid = Number.isInteger(id) && id > 0;
   const select = useUi((s) => s.select);
-  const weights = useUi((s) => s.weights);
-  const bandRange = useUi((s) => s.bandRange);
   const detail = useCandidate(valid ? id : null);
   const explanation = useExplanation(valid ? id : null);
   const field = useField();
@@ -118,9 +115,9 @@ export function DossierPage() {
   }, [id, valid, select]);
 
   if (!valid) return <NotFoundPage what="candidate" />;
+
   if (detail.isError) {
-    const notFound =
-      detail.error instanceof ApiError && detail.error.status === 404;
+    const notFound = detail.error instanceof ApiError && detail.error.status === 404;
     return notFound ? (
       <NotFoundPage what={`candidate #${padId(id)}`} />
     ) : (
